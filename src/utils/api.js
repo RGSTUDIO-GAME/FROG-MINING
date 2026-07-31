@@ -2,7 +2,7 @@ import { Config } from '@core/Config.js';
 import { Logger } from '@utils/logger.js';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const REQUEST_TIMEOUT = 8000;
+const REQUEST_TIMEOUT = 15000;
 
 /**
  * API — HTTP client for backend communication.
@@ -29,7 +29,7 @@ export const Api = {
       return { success: true, data: data.data, message: data.message };
     } catch (err) {
       Logger.error('API', method + ' ' + path + ' failed', err.message);
-      return { success: false, offline: true, error: 'Network error. Playing offline.' };
+      return { success: false, offline: true, error: 'Koneksi terputus — coba lagi' };
     } finally {
       clearTimeout(timer);
     }

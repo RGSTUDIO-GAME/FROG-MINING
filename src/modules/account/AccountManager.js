@@ -38,12 +38,19 @@ export class AccountManager {
     const deviceId = this._getDeviceId();
     const tg = this._getTelegramUser();
 
+    // Try the server a few times before falling back to offline mode.
     let res = null;
-    if (tg) {
-      const name = tg.username || tg.first_name || ('Pemain' + tg.id);
-      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
-    } else {
-      res = await Api.deviceLogin(deviceId, null);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      if (tg) {
+        const name = tg.username || tg.first_name || ('Pemain' + tg.id);
+        res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
+      } else {
+        res = await Api.deviceLogin(deviceId, null);
+      }
+
+      if (res && res.success) break;          // connected
+      if (res && !res.offline) break;         // server reachable but rejected — real error
+      if (attempt < 3) await this._sleep(attempt * 1000); // network failure — back off & retry
     }
 
     if (res && res.success) {
@@ -56,7 +63,7 @@ export class AccountManager {
       return { success: true, account, server: true };
     }
 
-    // Offline fallback — local anonymous account so the game always opens
+    // Offline fallback — local anonymous account so the game always opens.
     const fallbackName = tg ? (tg.username || tg.first_name || 'Pemain') : 'Pemain';
     const account = {
       id: deviceId || generateUUID(),
@@ -73,7 +80,38 @@ export class AccountManager {
     this._activateSession(account);
     Logger.info('Account', 'Auto-login (offline): ' + account.username);
     this.events.emit('account:login', account);
+    // Keep trying in the background and switch to the server account when the
+    // connection is back (a full reload keeps the state consistent).
+    this._scheduleReconnect();
     return { success: true, account, server: false };
+  }
+
+  _sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  _scheduleReconnect() {
+    if (this._reconnectTimer) return;
+    this._reconnectTimer = setInterval(async () => {
+      const deviceId = this._getDeviceId();
+      const tg = this._getTelegramUser();
+      let res = null;
+
+      if (tg) {
+        const name = tg.username || tg.first_name || ('Pemain' + tg.id);
+        res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
+      } else {
+        res = await Api.deviceLogin(deviceId, null);
+      }
+
+      if (res && res.success) {
+        clearInterval(this._reconnectTimer);
+        this._reconnectTimer = null;
+        Logger.info('Account', 'Koneksi pulih — memuat ulang akun server');
+        this.events.emit('account:reconnected', {});
+        setTimeout(() => window.location.reload(), 800);
+      }
+    }, 15000);
   }
 
   async register(username, email, password) {

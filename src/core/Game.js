@@ -77,6 +77,10 @@ export class Game {
       if (account) this._account = account;
     }
 
+    if (result && result.server === false) {
+      showPopup('Koneksi terputus — mode offline. Menyambung otomatis…', 'info', 2600);
+    }
+
     await this._initManagers();
     await this._startGame(app);
   }
