@@ -534,5 +534,13 @@
     "totalScore": 835,
     "totalDiamonds": 0,
     "file": "backups/latest/frog-mining.db"
+  },
+  {
+    "timestamp": "2026-07-31T13:41:27.064Z",
+    "size": 102400,
+    "players": 4,
+    "totalScore": 835,
+    "totalDiamonds": 0,
+    "file": "backups/latest/frog-mining.db"
   }
 ]
