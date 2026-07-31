@@ -44,8 +44,8 @@ export const Api = {
     return this._request('POST', '/api/auth/login', { email, password, deviceId });
   },
 
-  telegramLogin(telegramId, username, avatar, deviceId) {
-    return this._request('POST', '/api/auth/telegram', { telegramId, username, avatar, deviceId });
+  telegramLogin(telegramId, username, avatar, deviceId, firstName) {
+    return this._request('POST', '/api/auth/telegram', { telegramId, username, firstName, avatar, deviceId });
   },
 
   deviceLogin(deviceId, username) {

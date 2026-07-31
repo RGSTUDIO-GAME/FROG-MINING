@@ -41,7 +41,7 @@ export class AccountManager {
     let res = null;
     if (tg) {
       const name = tg.username || tg.first_name || ('Pemain' + tg.id);
-      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId);
+      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
     } else {
       res = await Api.deviceLogin(deviceId, null);
     }

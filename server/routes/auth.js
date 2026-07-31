@@ -2,13 +2,13 @@ import { v4 as uuidv4 } from 'uuid';
 import db, { hashPassword } from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
 
-function makeUniqueUsername(base) {
-  const clean = String(base || 'Pemain').trim().replace(/\s+/g, '_').slice(0, 12) || 'Pemain';
+function makeUniqueUsername(base, maxLen = 32) {
+  const clean = String(base || 'Pemain').trim().replace(/\s+/g, '_').slice(0, maxLen) || 'Pemain';
   let candidate = clean;
   let n = 0;
   while (db.prepare('SELECT id FROM players WHERE username = ?').get(candidate)) {
     n++;
-    candidate = clean + n;
+    candidate = clean.slice(0, maxLen - String(n).length) + n;
   }
   return candidate;
 }
@@ -29,7 +29,7 @@ function safePlayer(player, now) {
 export default async function authRoutes(fastify) {
   // Telegram Mini App auto-login (create account if missing)
   fastify.post('/api/auth/telegram', async (request, reply) => {
-    const { telegramId, username, avatar, deviceId } = request.body || {};
+    const { telegramId, username, firstName, avatar, deviceId } = request.body || {};
     if (!telegramId) {
       return reply.code(400).send({ status: 'error', message: 'Telegram ID diperlukan' });
     }
@@ -40,16 +40,17 @@ export default async function authRoutes(fastify) {
 
     if (!player) {
       const id = uuidv4();
-      const finalName = makeUniqueUsername(username);
+      const finalName = makeUniqueUsername(username || firstName || ('Pemain' + tgId));
       db.prepare(
         'INSERT INTO players (id, username, telegram_id, avatar, device_id, created_at, updated_at, last_login, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).run(id, finalName, tgId, avatar || '🐸', deviceId || null, now, now, now, 'active');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       markDataChanged();
     } else {
+      const updatedName = username || firstName || player.username;
       db.prepare(
         'UPDATE players SET username = ?, avatar = ?, device_id = COALESCE(?, device_id), last_login = ?, updated_at = ? WHERE id = ?'
-      ).run(username || player.username, avatar || player.avatar, deviceId || null, now, now, player.id);
+      ).run(updatedName, avatar || player.avatar, deviceId || null, now, now, player.id);
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(player.id);
     }
 
