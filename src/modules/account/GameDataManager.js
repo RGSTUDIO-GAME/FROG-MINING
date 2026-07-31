@@ -37,6 +37,12 @@ export class GameDataManager {
       this._data.score = scoreResult.data.score;
     }
 
+    // Fetch diamonds from server
+    const diamondResult = await Api.getDiamonds(playerId);
+    if (diamondResult.success) {
+      this._data.diamonds = diamondResult.data.diamonds;
+    }
+
     // Fetch auto mining status
     const miningResult = await Api.getAutoMining(playerId);
     if (miningResult.success && miningResult.data.active) {

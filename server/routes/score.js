@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
+import { markDataChanged } from '../services/backup.js';
 
 const PERIODS = {
   daily: { label: 'Daily', rewardPool: 1000000 },
@@ -87,6 +88,8 @@ export default async function scoreRoutes(fastify) {
         ).run(randomUUID(), season.id, playerId, newScore, new Date().toISOString());
       }
     }
+
+    markDataChanged();
 
     return reply.send({
       status: 'success',

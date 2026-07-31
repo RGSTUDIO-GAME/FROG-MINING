@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
+import { markDataChanged } from '../services/backup.js';
 
 const PACKAGES = {
   quick: { key: 'quick', price: 500, duration: 7200 },
@@ -38,6 +39,7 @@ export default async function autominingRoutes(fastify) {
         }
         db.prepare("UPDATE auto_mining SET status = 'inactive' WHERE id = ?").run(mining.id);
         mining.status = 'inactive';
+        markDataChanged();
       } else {
         // Calculate offline gains
         const elapsed = Math.floor((now - lastProcessed) / 1000);
@@ -51,6 +53,7 @@ export default async function autominingRoutes(fastify) {
             .run(newScore, now.toISOString(), playerId);
           db.prepare('UPDATE auto_mining SET total_generated_score = total_generated_score + ?, last_processed = ? WHERE id = ?')
             .run(secondsToAdd, now.toISOString(), mining.id);
+          markDataChanged();
         }
       }
     }
@@ -119,6 +122,8 @@ export default async function autominingRoutes(fastify) {
     db.prepare(
       'UPDATE auto_mining SET status = ?, package_key = ?, start_time = ?, end_time = ?, last_processed = ?, total_generated_score = 0 WHERE player_id = ?'
     ).run('active', packageKey, now.toISOString(), endTime.toISOString(), now.toISOString(), playerId);
+
+    markDataChanged();
 
     return reply.send({
       status: 'success',

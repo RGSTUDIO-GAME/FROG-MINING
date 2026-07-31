@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
+import { markDataChanged } from '../services/backup.js';
 
 export default async function mailRoutes(fastify) {
   // Get all mails for a player
@@ -51,6 +52,8 @@ export default async function mailRoutes(fastify) {
     // Mark as claimed
     db.prepare('UPDATE mails SET claim_status = ? WHERE id = ?').run('claimed', mailId);
 
+    markDataChanged();
+
     const player = db.prepare('SELECT total_diamonds FROM players WHERE id = ?').get(playerId);
 
     return reply.send({
@@ -78,6 +81,8 @@ export default async function mailRoutes(fastify) {
     db.prepare(
       'INSERT INTO mails (id, player_id, title, content, category, reward_type, reward_amount, expired_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(id, playerId, title, content || '', category || 'system', rewardType || null, rewardAmount || 0, expiry ? expiry.toISOString() : null);
+
+    markDataChanged();
 
     return reply.send({
       status: 'success',

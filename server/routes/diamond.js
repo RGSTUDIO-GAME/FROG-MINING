@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
+import { markDataChanged } from '../services/backup.js';
 
 export default async function diamondRoutes(fastify) {
   // Get player diamonds
@@ -61,6 +62,8 @@ export default async function diamondRoutes(fastify) {
     db.prepare(
       'INSERT INTO purchases (id, player_id, product_id, status) VALUES (?, ?, ?, ?)'
     ).run(randomUUID(), playerId, productId, 'completed');
+
+    markDataChanged();
 
     return reply.send({
       status: 'success',

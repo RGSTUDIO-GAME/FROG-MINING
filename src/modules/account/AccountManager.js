@@ -29,46 +29,74 @@ export class AccountManager {
   }
 
   async register(username, email, password) {
-    // Check local storage for duplicate email
+    const trimmedUser = username.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Try server first (source of truth)
+    const res = await Api.register(trimmedUser, trimmedEmail, password);
+    if (res.success) {
+      const p = res.data.player;
+      const account = this._fromServerPlayer(p, trimmedEmail, password);
+      this._activateSession(account);
+      this._saveAccount(account);
+      Logger.info('Account', 'Registered (server): ' + trimmedUser);
+      this.events.emit('account:register', account);
+      return { success: true, account, server: true };
+    }
+
+    // Server reachable but rejected — show the real error
+    if (!res.offline) {
+      return { success: false, error: res.error || 'Gagal membuat akun' };
+    }
+
+    // Server offline — fallback to local account
     const accounts = this._loadAllAccounts();
-    const existEmail = accounts.find((a) => a.email === email.trim().toLowerCase());
+    const existEmail = accounts.find((a) => a.email === trimmedEmail);
     if (existEmail) {
       return { success: false, error: 'Email sudah terdaftar' };
     }
-    const existUser = accounts.find((a) => a.username === username.trim());
+    const existUser = accounts.find((a) => a.username === trimmedUser);
     if (existUser) {
       return { success: false, error: 'Username sudah digunakan' };
     }
 
     const account = {
-      id: this._generateUUID(), username: username.trim(), email: email.trim().toLowerCase(),
-      avatar: '🐸', password: password, totalScore: 0, totalDiamond: 0,
+      id: this._generateUUID(), username: trimmedUser, email: trimmedEmail,
+      avatar: '🐸', password, totalScore: 0, totalDiamond: 0,
       createdAt: new Date().toISOString(), lastLoginAt: new Date().toISOString(),
-      accountStatus: 'active',
+      accountStatus: 'active', offline: true,
     };
 
-    this._account = account;
-    this._save(this._storageKey, account);
-    this._save(this._sessionKey, { active: true, playerId: account.id });
+    this._activateSession(account);
     this._saveAccount(account);
-
-    // Try API sync in background (no blocking)
-    Api.register(username, email, password).catch(() => {});
-
-    Logger.info('Account', 'Registered: ' + username);
+    Logger.info('Account', 'Registered (offline): ' + trimmedUser);
     this.events.emit('account:register', account);
-    return { success: true, account };
+    return { success: true, account, server: false };
   }
 
   async login(email, password) {
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Try server first (source of truth)
+    const res = await Api.login(trimmedEmail, password);
+    if (res.success) {
+      const p = res.data.player;
+      const account = this._fromServerPlayer(p, trimmedEmail, password);
+      this._activateSession(account);
+      this._saveAccount(account);
+      Logger.info('Account', 'Logged in (server): ' + account.username);
+      this.events.emit('account:login', account);
+      return { success: true, account, server: true };
+    }
+
     const accounts = this._loadAllAccounts();
-    const account = accounts.find((a) => a.email === email.trim().toLowerCase());
+    const account = accounts.find((a) => a.email === trimmedEmail);
 
     if (!account) {
-      return { success: false, error: 'Email tidak ditemukan' };
+      return { success: false, error: res.offline ? 'Email tidak ditemukan' : (res.error || 'Email tidak ditemukan') };
     }
     if (account.password !== password) {
-      return { success: false, error: 'Password salah' };
+      return { success: false, error: res.offline ? 'Password salah' : (res.error || 'Password salah') };
     }
 
     this._account = { ...account, password: undefined };
@@ -80,6 +108,28 @@ export class AccountManager {
     Logger.info('Account', 'Logged in: ' + account.username);
     this.events.emit('account:login', account);
     return { success: true, account };
+  }
+
+  _fromServerPlayer(p, email, password) {
+    return {
+      id: p.id,
+      username: p.username,
+      email,
+      avatar: p.avatar || '🐸',
+      password,
+      totalScore: p.total_score || 0,
+      totalDiamond: p.total_diamonds || 0,
+      createdAt: p.created_at || new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      accountStatus: p.status || 'active',
+      server: true,
+    };
+  }
+
+  _activateSession(account) {
+    this._account = account;
+    this._save(this._storageKey, account);
+    this._save(this._sessionKey, { active: true, playerId: account.id });
   }
 
   async syncSession() {

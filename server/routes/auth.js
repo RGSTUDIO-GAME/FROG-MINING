@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import db, { hashPassword } from '../db/database.js';
+import { markDataChanged } from '../services/backup.js';
 
 export default async function authRoutes(fastify) {
   // Register
@@ -46,6 +47,8 @@ export default async function authRoutes(fastify) {
     ).run(id, trimmedUser, trimmedEmail, hashPassword(password), now, now, now);
 
     db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
+
+    markDataChanged();
 
     const player = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status FROM players WHERE id = ?').get(id);
 

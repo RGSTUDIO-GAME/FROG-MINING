@@ -10,6 +10,8 @@ import leaderboardRoutes from './routes/leaderboard.js';
 import autominingRoutes from './routes/automining.js';
 import mailRoutes from './routes/mail.js';
 import diamondRoutes from './routes/diamond.js';
+import db from './db/database.js';
+import { initBackup, backupNow, getBackupStatus } from './services/backup.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
@@ -35,6 +37,21 @@ fastify.get('/api/health', async () => ({
   version: '0.1.0',
 }));
 
+// Backup status
+fastify.get('/api/admin/backup/status', async () => ({
+  status: 'success',
+  data: getBackupStatus(),
+}));
+
+// Manual backup trigger
+fastify.post('/api/admin/backup', async (request, reply) => {
+  const result = await backupNow(true);
+  if (!result.success) {
+    return reply.code(500).send({ status: 'error', message: result.error });
+  }
+  return reply.send({ status: 'success', message: 'Backup selesai', data: result });
+});
+
 // Register routes
 await fastify.register(authRoutes);
 await fastify.register(scoreRoutes);
@@ -48,6 +65,7 @@ const start = async () => {
   try {
     await fastify.listen({ port: PORT, host: HOST });
     console.log('🐸 Frog Mining Server running on port ' + PORT);
+    initBackup(db);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

@@ -5,7 +5,7 @@ import { mkdirSync } from 'fs';
 import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbDir = join(__dirname, '../../data');
+const dbDir = process.env.DATA_DIR || join(__dirname, '../../data');
 mkdirSync(dbDir, { recursive: true });
 
 const db = new Database(join(dbDir, 'frog-mining.db'));
