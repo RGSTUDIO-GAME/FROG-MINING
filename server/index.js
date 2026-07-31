@@ -14,6 +14,7 @@ import mailRoutes from './routes/mail.js';
 import diamondRoutes from './routes/diamond.js';
 import db from './db/database.js';
 import { initBackup, backupNow, getBackupStatus } from './services/backup.js';
+import { initScheduler } from './services/scheduler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
@@ -88,6 +89,7 @@ const start = async () => {
     await fastify.listen({ port: PORT, host: HOST });
     console.log('🐸 Frog Mining Server running on port ' + PORT);
     initBackup(db);
+    initScheduler();
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
