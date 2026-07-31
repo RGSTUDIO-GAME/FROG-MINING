@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import db, { hashPassword } from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
+import { ensureWelcomeGift } from '../services/gifts.js';
 
 function makeUniqueUsername(base, maxLen = 32) {
   const clean = String(base || 'Pemain').trim().replace(/\s+/g, '_').slice(0, maxLen) || 'Pemain';
@@ -55,6 +56,8 @@ export default async function authRoutes(fastify) {
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(player.id);
     }
 
+    ensureWelcomeGift(player.id);
+
     return reply.send({ status: 'success', message: 'Selamat datang', data: { player: safePlayer(player, now) } });
   });
 
@@ -80,6 +83,8 @@ export default async function authRoutes(fastify) {
     } else {
       db.prepare('UPDATE players SET last_login = ?, updated_at = ? WHERE id = ?').run(now, now, player.id);
     }
+
+    ensureWelcomeGift(player.id);
 
     return reply.send({ status: 'success', message: 'Selamat datang', data: { player: safePlayer(player, now) } });
   });
@@ -180,6 +185,8 @@ export default async function authRoutes(fastify) {
       total_score: player.total_score, total_diamonds: player.total_diamonds,
       created_at: player.created_at, last_login: player.last_login, status: player.status,
     };
+
+    ensureWelcomeGift(player.id);
 
     return reply.send({ status: 'success', message: 'Login berhasil', data: { player: safe } });
   });

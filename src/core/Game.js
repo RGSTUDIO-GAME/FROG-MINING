@@ -10,7 +10,6 @@ import { AutoMiningManager } from '@modules/gameplay/AutoMiningManager.js';
 import { SoundManager } from '@modules/gameplay/SoundManager.js';
 import { LeaderboardManager } from '@modules/leaderboard/LeaderboardManager.js';
 import { MailManager } from '@modules/mail/MailManager.js';
-import { checkAndSendGifts } from '@modules/mail/AdminGift.js';
 
 import { Header } from '@ui/layout/Header.js';
 import { BottomNav } from '@ui/layout/BottomNav.js';
@@ -124,7 +123,6 @@ export class Game {
     this.leaderboardManager.init();
     await this.mailManager.init();
     this.soundManager.init();
-    await checkAndSendGifts(this.mailManager, this.accountManager);
     this.accountManager.syncSession();
   }
 
