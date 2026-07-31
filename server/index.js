@@ -1,7 +1,9 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -59,6 +61,26 @@ await fastify.register(leaderboardRoutes);
 await fastify.register(autominingRoutes);
 await fastify.register(mailRoutes);
 await fastify.register(diamondRoutes);
+
+// Serve built frontend (dist/) — makes the same deploy host the game + API
+const DIST_DIR = join(__dirname, '../dist');
+if (existsSync(join(DIST_DIR, 'index.html'))) {
+  await fastify.register(fastifyStatic, {
+    root: DIST_DIR,
+    prefix: '/',
+    wildcard: true,
+    index: ['index.html'],
+  });
+
+  fastify.setNotFoundHandler((request, reply) => {
+    if (request.url.startsWith('/api/')) {
+      return reply.code(404).send({ status: 'error', message: 'Not found' });
+    }
+    return reply.sendFile('index.html');
+  });
+} else {
+  console.warn('[Server] dist/ tidak ditemukan — hanya menjalankan API. Jalankan `npm run build` untuk frontend.');
+}
 
 // Start server
 const start = async () => {
