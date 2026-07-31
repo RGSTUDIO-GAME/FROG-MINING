@@ -36,12 +36,12 @@ export const Api = {
   },
 
   // Auth
-  register(username, email, password) {
-    return this._request('POST', '/api/auth/register', { username, email, password });
+  register(username, email, password, deviceId) {
+    return this._request('POST', '/api/auth/register', { username, email, password, deviceId });
   },
 
-  login(email, password) {
-    return this._request('POST', '/api/auth/login', { email, password });
+  login(email, password, deviceId) {
+    return this._request('POST', '/api/auth/login', { email, password, deviceId });
   },
 
   getSession(playerId) {

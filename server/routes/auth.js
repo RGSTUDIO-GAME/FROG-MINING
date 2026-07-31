@@ -5,7 +5,7 @@ import { markDataChanged } from '../services/backup.js';
 export default async function authRoutes(fastify) {
   // Register
   fastify.post('/api/auth/register', async (request, reply) => {
-    const { username, email, password } = request.body || {};
+    const { username, email, password, deviceId } = request.body || {};
 
     if (!username || !email || !password) {
       return reply.code(400).send({ status: 'error', message: 'Username, email, dan password wajib diisi' });
@@ -39,12 +39,20 @@ export default async function authRoutes(fastify) {
       return reply.code(409).send({ status: 'error', message: 'Email sudah terdaftar' });
     }
 
+    // Policy B: one device can only register ONE account
+    if (deviceId) {
+      const boundDevice = db.prepare('SELECT id FROM players WHERE device_id = ?').get(deviceId);
+      if (boundDevice) {
+        return reply.code(403).send({ status: 'error', message: 'Perangkat ini sudah terdaftar dengan akun lain' });
+      }
+    }
+
     const id = uuidv4();
     const now = new Date().toISOString();
 
     db.prepare(
-      'INSERT INTO players (id, username, email, password_hash, created_at, updated_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, trimmedUser, trimmedEmail, hashPassword(password), now, now, now);
+      'INSERT INTO players (id, username, email, password_hash, device_id, created_at, updated_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, trimmedUser, trimmedEmail, hashPassword(password), deviceId || null, now, now, now);
 
     db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
 
@@ -57,7 +65,7 @@ export default async function authRoutes(fastify) {
 
   // Login
   fastify.post('/api/auth/login', async (request, reply) => {
-    const { email, password } = request.body || {};
+    const { email, password, deviceId } = request.body || {};
 
     if (!email || !password) {
       return reply.code(400).send({ status: 'error', message: 'Email dan password wajib diisi' });
@@ -80,6 +88,11 @@ export default async function authRoutes(fastify) {
 
     db.prepare('UPDATE players SET last_login = ?, updated_at = ? WHERE id = ?')
       .run(new Date().toISOString(), new Date().toISOString(), player.id);
+
+    // Bind device on first login from this device (migrates old accounts)
+    if (deviceId && !player.device_id) {
+      db.prepare('UPDATE players SET device_id = ? WHERE id = ?').run(deviceId, player.id);
+    }
 
     const safePlayer = {
       id: player.id, username: player.username, avatar: player.avatar,

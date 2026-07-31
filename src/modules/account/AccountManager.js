@@ -32,9 +32,10 @@ export class AccountManager {
   async register(username, email, password) {
     const trimmedUser = username.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const deviceId = this._getDeviceId();
 
     // Try server first (source of truth)
-    const res = await Api.register(trimmedUser, trimmedEmail, password);
+    const res = await Api.register(trimmedUser, trimmedEmail, password, deviceId);
     if (res.success) {
       const p = res.data.player;
       const account = this._fromServerPlayer(p, trimmedEmail, password);
@@ -52,6 +53,9 @@ export class AccountManager {
 
     // Server offline — fallback to local account
     const accounts = this._loadAllAccounts();
+    if (accounts.length > 0) {
+      return { success: false, error: 'Perangkat ini sudah terdaftar dengan akun lain' };
+    }
     const existEmail = accounts.find((a) => a.email === trimmedEmail);
     if (existEmail) {
       return { success: false, error: 'Email sudah terdaftar' };
@@ -77,9 +81,10 @@ export class AccountManager {
 
   async login(email, password) {
     const trimmedEmail = email.trim().toLowerCase();
+    const deviceId = this._getDeviceId();
 
     // Try server first (source of truth)
-    const res = await Api.login(trimmedEmail, password);
+    const res = await Api.login(trimmedEmail, password, deviceId);
     if (res.success) {
       const p = res.data.player;
       const account = this._fromServerPlayer(p, trimmedEmail, password);
@@ -125,6 +130,20 @@ export class AccountManager {
       accountStatus: p.status || 'active',
       server: true,
     };
+  }
+
+  _getDeviceId() {
+    const key = Config.STORAGE_KEY + ':deviceId';
+    try {
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = generateUUID();
+        localStorage.setItem(key, id);
+      }
+      return id;
+    } catch {
+      return null;
+    }
   }
 
   _activateSession(account) {
