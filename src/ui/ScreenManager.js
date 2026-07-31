@@ -28,6 +28,10 @@ export class ScreenManager {
     this.screens.set(name, screenInstance);
   }
 
+  getScreen(name) {
+    return this.screens.get(name) || null;
+  }
+
   showScreen(name) {
     const screen = this.screens.get(name);
     if (!screen) {

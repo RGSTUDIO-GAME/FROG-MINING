@@ -19,7 +19,8 @@ export class ScoreManager {
 
   init() {
     this._totalTaps = this.gameDataManager.getTaps();
-    // Sync pending taps every 5 seconds
+    // Sync pending taps every 5 seconds (clear old timer on re-init)
+    if (this._syncInterval) clearInterval(this._syncInterval);
     this._syncInterval = setInterval(() => this._syncPendingTaps(), 5000);
     Logger.info('ScoreManager', 'Initialized — Score: ' + this.gameDataManager.getScore());
   }

@@ -63,26 +63,58 @@ export class Game {
   }
 
   async _checkAndRoute(app) {
+    // Guarantee an account exists instantly (local fallback) so the game
+    // always opens — auto-login to the server runs in the background.
     try {
-      const result = await this.accountManager.autoLogin();
-      if (result && result.account) {
-        this._account = result.account;
-      }
+      this._account = this.accountManager.getOrCreateLocalAccount();
     } catch (err) {
+      Logger.error('Game', 'Local account failed', err);
+    }
+
+    this.events.on('account:serverReady', (account) => this._onServerAccount(account));
+
+    // Background server login — never blocks the loading screen.
+    this.accountManager.autoLogin().catch((err) => {
       Logger.error('Game', 'Auto-login failed', err);
-    }
-
-    if (!this._account) {
-      const account = this.accountManager.getAccount();
-      if (account) this._account = account;
-    }
-
-    if (result && result.server === false) {
-      showPopup('Koneksi terputus — mode offline. Menyambung otomatis…', 'info', 2600);
-    }
+    });
 
     await this._initManagers();
     await this._startGame(app);
+  }
+
+  async _onServerAccount(account) {
+    if (!account) return;
+    const previous = this._account;
+    this._account = account;
+
+    // Re-sync all managers with the server account and refresh the UI.
+    try {
+      await this._initManagers();
+    } catch (err) {
+      Logger.error('Game', 'Re-sync managers failed', err);
+    }
+
+    const home = this.screenManager?.getScreen('home');
+    const shop = this.screenManager?.getScreen('shop');
+    const profile = this.screenManager?.getScreen('profile');
+    const mail = this.screenManager?.getScreen('mail');
+
+    home?.updateScore(this.scoreManager.getScore());
+    this.header?.updateDiamonds(this.gameDataManager.getDiamonds());
+    this.header?.updateMailCount(this.mailManager.getUnreadCount());
+    this.header?.updateRank(this.scoreManager.getRank());
+    shop?.updateDiamonds(this.gameDataManager.getDiamonds());
+    if (profile) this._updateProfile(profile);
+    if (mail) this._refreshMail(mail);
+    const lbScreen = this.screenManager?.getScreen('leaderboard');
+    if (lbScreen) this._refreshLeaderboard(lbScreen);
+    if (home) this._refreshAutoMiningUI(home);
+    if (shop) this._refreshShopMining(shop);
+
+    if (previous && previous.offline) {
+      showPopup('Koneksi pulih — akun tersinkron!', 'success', 2200);
+    }
+    Logger.info('Game', 'Server account aktif: ' + account.username);
   }
 
   async _initManagers() {

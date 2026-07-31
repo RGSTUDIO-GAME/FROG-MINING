@@ -30,44 +30,18 @@ export class AccountManager {
   }
 
   /**
-   * Auto-login — Telegram Mini App users are identified by their Telegram ID.
-   * Outside Telegram (web), a per-device anonymous account is used.
-   * No registration form, no logout.
+   * Local fallback account so the game can always open instantly.
+   * The server account (if any) takes over via background auto-login.
    */
-  async autoLogin() {
+  getOrCreateLocalAccount() {
+    const existing = this.getAccount();
+    if (existing && existing.id) return existing;
+
     const deviceId = this._getDeviceId();
     const tg = this._getTelegramUser();
-
-    // Try the server a few times before falling back to offline mode.
-    let res = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      if (tg) {
-        const name = tg.username || tg.first_name || ('Pemain' + tg.id);
-        res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
-      } else {
-        res = await Api.deviceLogin(deviceId, null);
-      }
-
-      if (res && res.success) break;          // connected
-      if (res && !res.offline) break;         // server reachable but rejected — real error
-      if (attempt < 3) await this._sleep(attempt * 1000); // network failure — back off & retry
-    }
-
-    if (res && res.success) {
-      const p = res.data.player;
-      const account = this._fromServerPlayer(p, null, null);
-      this._activateSession(account);
-      this._saveAccount(account);
-      Logger.info('Account', 'Auto-login: ' + account.username);
-      this.events.emit('account:login', account);
-      return { success: true, account, server: true };
-    }
-
-    // Offline fallback — local anonymous account so the game always opens.
-    const fallbackName = tg ? (tg.username || tg.first_name || 'Pemain') : 'Pemain';
     const account = {
       id: deviceId || generateUUID(),
-      username: fallbackName,
+      username: tg ? (tg.username || tg.first_name || 'Pemain') : 'Pemain',
       email: null,
       avatar: (tg && tg.photo_url) || '🐸',
       totalScore: 0,
@@ -78,16 +52,43 @@ export class AccountManager {
       offline: true,
     };
     this._activateSession(account);
-    Logger.info('Account', 'Auto-login (offline): ' + account.username);
-    this.events.emit('account:login', account);
-    // Keep trying in the background and switch to the server account when the
-    // connection is back (a full reload keeps the state consistent).
-    this._scheduleReconnect();
-    return { success: true, account, server: false };
+    this._saveAccount(account);
+    return account;
   }
 
-  _sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  /**
+   * Auto-login — Telegram Mini App users are identified by their Telegram ID.
+   * Outside Telegram (web), a per-device anonymous account is used.
+   * No registration form, no logout. Runs in the background and never blocks
+   * the game from opening (the caller should already have a local account).
+   */
+  async autoLogin() {
+    const deviceId = this._getDeviceId();
+    const tg = this._getTelegramUser();
+
+    let res = null;
+    if (tg) {
+      const name = tg.username || tg.first_name || ('Pemain' + tg.id);
+      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
+    } else {
+      res = await Api.deviceLogin(deviceId, null);
+    }
+
+    if (res && res.success) {
+      const p = res.data.player;
+      const account = this._fromServerPlayer(p, null, null);
+      this._activateSession(account);
+      this._saveAccount(account);
+      Logger.info('Account', 'Auto-login: ' + account.username);
+      this.events.emit('account:login', account);
+      this.events.emit('account:serverReady', account);
+      return { success: true, account, server: true };
+    }
+
+    // Offline fallback — keep the local account and retry in the background.
+    Logger.info('Account', 'Auto-login offline, reconnect terjadwal');
+    this._scheduleReconnect();
+    return { success: false, account: this.getAccount(), server: false };
   }
 
   _scheduleReconnect() {
@@ -107,11 +108,14 @@ export class AccountManager {
       if (res && res.success) {
         clearInterval(this._reconnectTimer);
         this._reconnectTimer = null;
-        Logger.info('Account', 'Koneksi pulih — memuat ulang akun server');
-        this.events.emit('account:reconnected', {});
-        setTimeout(() => window.location.reload(), 800);
+        const account = this._fromServerPlayer(res.data.player, null, null);
+        this._activateSession(account);
+        this._saveAccount(account);
+        Logger.info('Account', 'Koneksi pulih — akun server tersinkron');
+        this.events.emit('account:login', account);
+        this.events.emit('account:serverReady', account);
       }
-    }, 15000);
+    }, 10000);
   }
 
   async register(username, email, password) {
