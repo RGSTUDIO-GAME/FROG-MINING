@@ -107,8 +107,13 @@ export class Game {
       const result = await this.accountManager.login(email, password);
       if (!result.success) { showPopup(result.error || 'Login gagal', 'error'); return; }
       this._account = result.account;
-      await this._initManagers();
-      await this._startGame(app);
+      try {
+        await this._initManagers();
+        await this._startGame(app);
+      } catch (err) {
+        Logger.error('Game', 'Start failed after login', err);
+        showPopup('Gagal memuat game. Coba lagi.', 'error');
+      }
     } catch (err) {
       Logger.error('Game', 'Login failed', err);
       showPopup('Login gagal. Coba lagi.', 'error');

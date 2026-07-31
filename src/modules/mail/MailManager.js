@@ -2,6 +2,7 @@ import { Config } from '@core/Config.js';
 import { Logger } from '@utils/logger.js';
 import { Api } from '@utils/api.js';
 import { MailConfig } from './MailConfig.js';
+import { generateUUID } from '@utils/helpers.js';
 
 /**
  * MailManager — Handles mail with API sync.
@@ -48,7 +49,8 @@ export class MailManager {
 
       // Merge: prefer server data, keep local unclaimed
       const localUnclaimed = this._mails.filter(
-        (m) => m.claimStatus === 'unclaimed' && !serverMails.find((s) => s.id === m.id)
+        (m) => m.claimStatus === 'unclaimed' &&
+          !serverMails.find((s) => s.id === m.id || (s.title === m.title && s.category === m.category))
       );
 
       this._mails = [...serverMails, ...localUnclaimed];
@@ -81,7 +83,7 @@ export class MailManager {
     const expiresAt = expiry > 0 ? new Date(now.getTime() + expiry * 24 * 60 * 60 * 1000).toISOString() : null;
 
     const mail = {
-      id: this._generateUUID(),
+      id: generateUUID(),
       playerId: account.id,
       title,
       content,

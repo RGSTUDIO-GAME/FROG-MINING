@@ -7,7 +7,6 @@ import { Logger } from '@utils/logger.js';
 function bootstrap() {
   const game = new Game();
   game.init();
-  game.start();
 
   if (import.meta.env.DEV) {
     window.__game = game;

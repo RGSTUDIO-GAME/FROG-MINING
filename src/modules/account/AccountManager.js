@@ -1,6 +1,7 @@
 import { Config } from '@core/Config.js';
 import { Logger } from '@utils/logger.js';
 import { Api } from '@utils/api.js';
+import { generateUUID } from '@utils/helpers.js';
 
 /**
  * AccountManager — Email/password auth with API + localStorage fallback.
@@ -61,7 +62,7 @@ export class AccountManager {
     }
 
     const account = {
-      id: this._generateUUID(), username: trimmedUser, email: trimmedEmail,
+      id: generateUUID(), username: trimmedUser, email: trimmedEmail,
       avatar: '🐸', password, totalScore: 0, totalDiamond: 0,
       createdAt: new Date().toISOString(), lastLoginAt: new Date().toISOString(),
       accountStatus: 'active', offline: true,
@@ -178,13 +179,6 @@ export class AccountManager {
     if (idx >= 0) accounts[idx] = account;
     else accounts.push(account);
     localStorage.setItem(Config.STORAGE_KEY + ':accounts', JSON.stringify(accounts));
-  }
-
-  _generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-    });
   }
 
   _save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
