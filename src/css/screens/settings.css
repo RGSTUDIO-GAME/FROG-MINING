@@ -189,26 +189,3 @@
   transform: translateX(20px);
 }
 
-/* ── Logout Button ── */
-
-.settings-logout-btn {
-  width: 100%;
-  padding: 13px;
-  background: var(--color-accent-error);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-family: var(--font-family-display);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 4px 16px rgba(230, 57, 70, 0.3);
-  margin-top: auto;
-}
-
-.settings-logout-btn:active {
-  transform: scale(0.97);
-  opacity: 0.9;
-}
