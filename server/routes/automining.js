@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
+import { processAutoMining } from '../services/autoMiningEngine.js';
 
 const PACKAGES = {
   quick: { key: 'quick', price: 500, duration: 7200 },
@@ -14,61 +15,34 @@ export default async function autominingRoutes(fastify) {
   // Get auto mining status
   fastify.get('/api/automining/:playerId', async (request, reply) => {
     const { playerId } = request.params;
+    const player = db.prepare('SELECT id FROM players WHERE id = ?').get(playerId);
+    if (!player) {
+      return reply.code(404).send({ status: 'error', message: 'Player not found' });
+    }
+
+    // Apply any accrued (offline) gains before returning the status.
+    processAutoMining(playerId);
+
     const mining = db.prepare('SELECT * FROM auto_mining WHERE player_id = ?').get(playerId);
-
-    if (!mining) {
-      return reply.send({ status: 'success', data: { active: false } });
+    if (!mining || mining.status !== 'active') {
+      const totalScore = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);
+      return reply.send({
+        status: 'success',
+        data: { active: false, currentScore: totalScore ? totalScore.total_score : 0 },
+      });
     }
 
-    // Calculate offline gains if still active
-    if (mining.status === 'active' && mining.end_time) {
-      const now = new Date();
-      const endTime = new Date(mining.end_time);
-      const lastProcessed = mining.last_processed ? new Date(mining.last_processed) : new Date(mining.start_time);
-
-      if (now >= endTime) {
-        // Expired — calculate final gains
-        const remaining = Math.floor((endTime - lastProcessed) / 1000);
-        if (remaining > 0) {
-          const player = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);
-          const newScore = player.total_score + remaining;
-          db.prepare('UPDATE players SET total_score = ?, updated_at = ? WHERE id = ?')
-            .run(newScore, now.toISOString(), playerId);
-          db.prepare('UPDATE auto_mining SET total_generated_score = total_generated_score + ? WHERE id = ?')
-            .run(remaining, mining.id);
-        }
-        db.prepare("UPDATE auto_mining SET status = 'inactive' WHERE id = ?").run(mining.id);
-        mining.status = 'inactive';
-        markDataChanged();
-      } else {
-        // Calculate offline gains
-        const elapsed = Math.floor((now - lastProcessed) / 1000);
-        const remaining = Math.floor((endTime - lastProcessed) / 1000);
-        const secondsToAdd = Math.min(elapsed, remaining);
-
-        if (secondsToAdd > 0) {
-          const player = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);
-          const newScore = player.total_score + secondsToAdd;
-          db.prepare('UPDATE players SET total_score = ?, updated_at = ? WHERE id = ?')
-            .run(newScore, now.toISOString(), playerId);
-          db.prepare('UPDATE auto_mining SET total_generated_score = total_generated_score + ?, last_processed = ? WHERE id = ?')
-            .run(secondsToAdd, now.toISOString(), mining.id);
-          markDataChanged();
-        }
-      }
-    }
-
-    const player = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);
+    const totalScore = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);
 
     return reply.send({
       status: 'success',
       data: {
-        active: mining.status === 'active',
+        active: true,
         package: mining.package_key,
         startTime: mining.start_time,
         endTime: mining.end_time,
         totalGenerated: mining.total_generated_score,
-        currentScore: player ? player.total_score : 0,
+        currentScore: totalScore ? totalScore.total_score : 0,
       },
     });
   });
@@ -115,13 +89,20 @@ export default async function autominingRoutes(fastify) {
       'INSERT INTO transactions (id, player_id, type, amount, balance_before, balance_after, reference) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run(randomUUID(), playerId, 'spend', pkg.price, player.total_diamonds, newDiamonds, 'auto-mining-' + packageKey);
 
-    // Activate mining
+    // Activate mining (create the row if it does not exist yet)
     const now = new Date();
     const endTime = new Date(now.getTime() + pkg.duration * 1000);
 
-    db.prepare(
-      'UPDATE auto_mining SET status = ?, package_key = ?, start_time = ?, end_time = ?, last_processed = ?, total_generated_score = 0 WHERE player_id = ?'
-    ).run('active', packageKey, now.toISOString(), endTime.toISOString(), now.toISOString(), playerId);
+    const row = db.prepare('SELECT id FROM auto_mining WHERE player_id = ?').get(playerId);
+    if (row) {
+      db.prepare(
+        'UPDATE auto_mining SET status = ?, package_key = ?, start_time = ?, end_time = ?, last_processed = ?, total_generated_score = 0 WHERE player_id = ?'
+      ).run('active', packageKey, now.toISOString(), endTime.toISOString(), now.toISOString(), playerId);
+    } else {
+      db.prepare(
+        'INSERT INTO auto_mining (id, player_id, status, package_key, start_time, end_time, last_processed, total_generated_score) VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
+      ).run(randomUUID(), playerId, 'active', packageKey, now.toISOString(), endTime.toISOString(), now.toISOString());
+    }
 
     markDataChanged();
 

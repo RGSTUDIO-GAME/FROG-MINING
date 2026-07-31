@@ -1,14 +1,17 @@
 import db from '../db/database.js';
 import { ensureSeasons } from './seasons.js';
 import { closeExpiredSeasons } from './rewards.js';
+import { processAutoMining } from './autoMiningEngine.js';
+import { markDataChanged } from './backup.js';
 
 /**
  * Scheduler — Runs time-based jobs automatically.
  *
  * Jobs:
- *   1. Ensure active leaderboard seasons exist.
- *   2. Close expired seasons and distribute rewards via Mail.
- *   3. Delete mails that have passed their expiration date.
+ *   1. Process active Auto Mining sessions (add score + keep leaderboard in sync).
+ *   2. Ensure active leaderboard seasons exist.
+ *   3. Close expired seasons and distribute rewards via Mail.
+ *   4. Delete mails that have passed their expiration date.
  *
  * Interval is configurable via SCHEDULER_INTERVAL_SECONDS (default 60s).
  * A tick also runs once on startup so missed periods are processed immediately.
@@ -26,6 +29,9 @@ function deleteExpiredMails() {
 
 function tick() {
   try {
+    const miningChanged = processAutoMining();
+    if (miningChanged) markDataChanged();
+
     ensureSeasons();
     const closed = closeExpiredSeasons();
     if (closed.length > 0) {

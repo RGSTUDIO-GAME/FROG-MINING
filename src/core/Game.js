@@ -173,14 +173,14 @@ export class Game {
 
     // Mail
     this.events.on('mail:new', () => this.header.updateMailCount(this.mailManager.getUnreadCount()));
-    this.events.on('mail:claimRequest', ({ mailId }) => {
-      const result = this.mailManager.claimReward(mailId);
+    this.events.on('mail:claimRequest', async ({ mailId }) => {
+      const result = await this.mailManager.claimReward(mailId);
       if (result.success) {
         showPopup('+' + result.reward.toLocaleString() + ' Diamond claimed!', 'success');
         this.soundManager.playReward();
         this._refreshMail(mail);
       } else {
-        showPopup(result.error, 'error');
+        showPopup(result.error || 'Claim gagal, coba lagi', 'error');
         this.soundManager.playError();
       }
     });
@@ -209,6 +209,21 @@ export class Game {
     screen.updateMails(this.mailManager.getMails());
   }
 
+  _activateMining(key) {
+    this._activateMiningAsync(key).catch(() => {
+      showPopup('Gagal mengaktifkan Auto Mining', 'error');
+      this.soundManager.playError();
+    });
+  }
+
+  async _activateMiningAsync(key) {
+    const result = await this.autoMiningManager.activate(key);
+    if (!result.success) {
+      showPopup(result.error || 'Gagal mengaktifkan Auto Mining', 'error');
+      this.soundManager.playError();
+    }
+  }
+
   async _setupAutoMiningUI(home) {
     const status = this.autoMiningManager.getStatus();
     const packages = this.autoMiningManager.getPackages();
@@ -217,10 +232,7 @@ export class Game {
     } else {
       home.showMiningPackages(packages,
         (key) => this.gameDataManager.canAfford(packages.find((p) => p.key === key)?.price || Infinity),
-        (key) => {
-          const result = this.autoMiningManager.activate(key);
-          if (!result.success) { showPopup(result.error, 'error'); this.soundManager.playError(); }
-        }
+        (key) => this._activateMining(key)
       );
     }
   }
@@ -231,10 +243,7 @@ export class Game {
       const packages = this.autoMiningManager.getPackages();
       home.showMiningPackages(packages,
         (key) => this.gameDataManager.canAfford(packages.find((p) => p.key === key)?.price || Infinity),
-        (key) => {
-          const result = this.autoMiningManager.activate(key);
-          if (!result.success) { showPopup(result.error, 'error'); this.soundManager.playError(); }
-        }
+        (key) => this._activateMining(key)
       );
     }
   }
@@ -243,18 +252,7 @@ export class Game {
     const packages = this.autoMiningManager.getPackages();
     shop.setMiningData(packages,
       (price) => this.gameDataManager.canAfford(price),
-      (key) => {
-        const result = this.autoMiningManager.activate(key);
-        if (!result.success) {
-          showPopup(result.error, 'error');
-          this.soundManager.playError();
-        } else {
-          shop.updateDiamonds(this.gameDataManager.getDiamonds());
-          this.header.updateDiamonds(this.gameDataManager.getDiamonds());
-          showPopup('Mining activated! ⛏️', 'success');
-          this.soundManager.playReward();
-        }
-      }
+      (key) => this._activateMining(key)
     );
   }
 

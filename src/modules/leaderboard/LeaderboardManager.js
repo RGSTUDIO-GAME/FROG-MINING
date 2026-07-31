@@ -52,11 +52,14 @@ export class LeaderboardManager {
     this._boards = { daily: null, weekly: null, monthly: null };
   }
 
-  init() {
+  async init() {
     this._data = this._load() || this._createDefaults();
     this._checkPeriodReset();
     this._ensurePeriods();
     this._refreshAll();
+    // Pull the live boards from the server so other players are visible
+    // even before the player taps.
+    await this._fetchFromServer();
     Logger.info('Leaderboard', 'Initialized');
   }
 
@@ -90,36 +93,55 @@ export class LeaderboardManager {
     this._refreshAll();
     this.events.emit('leaderboard:update');
 
-    // Try API sync in background
-    this._syncToApi(account.id, score);
+    // Refresh the live board from the server (throttled). Tap submission is
+    // handled by ScoreManager — never submit scores from here.
+    this._scheduleFetch(account.id);
   }
 
-  async _syncToApi(playerId, score) {
-    try {
-      await Api.submitTap(playerId, score);
-      for (const period of ['daily', 'weekly', 'monthly']) {
-        const result = await Api.getLeaderboard(period, playerId);
-        if (result.success && result.data.entries) {
-          // Merge API entries into local
-          const board = this._data[period];
-          result.data.entries.forEach((apiEntry) => {
-            const existing = board.entries.find((e) => e.playerId === apiEntry.playerId);
-            if (existing) {
-              if (apiEntry.score > existing.score) existing.score = apiEntry.score;
-            } else {
-              board.entries.push({
-                playerId: apiEntry.playerId,
-                username: apiEntry.username,
-                avatar: apiEntry.avatar || '🐸',
-                score: apiEntry.score,
-                firstScoreAt: null,
-              });
-            }
-          });
-          this._save();
-        }
+  async _fetchFromServer() {
+    const account = this.accountManager?.getAccount();
+    if (!account) return;
+
+    for (const period of ['daily', 'weekly', 'monthly']) {
+      const result = await Api.getLeaderboard(period, account.id);
+      if (!result.success || !result.data?.entries) continue;
+
+      const board = this._data[period];
+      if (!board) continue;
+
+      const serverEntries = result.data.entries.map((e) => ({
+        playerId: e.playerId,
+        username: e.username,
+        avatar: e.avatar || '🐸',
+        score: e.score,
+        firstScoreAt: e.firstScoreAt || null,
+      }));
+
+      // Merge: server entries win for matching players; keep local-only entries.
+      const localOnly = board.entries.filter(
+        (le) => !serverEntries.some((se) => se.playerId === le.playerId)
+      );
+      board.entries = [...serverEntries, ...localOnly];
+
+      if (typeof result.data.playerRank === 'number') {
+        board.playerRank = result.data.playerRank;
       }
-    } catch { /* offline, ignore */ }
+      if (result.data.rewardPool) board.rewardPool = result.data.rewardPool;
+      if (result.data.countdown && typeof result.data.countdown.remainingMs === 'number') {
+        board.endTime = Date.now() + result.data.countdown.remainingMs;
+      }
+    }
+
+    this._save();
+    this._refreshAll();
+    this.events.emit('leaderboard:update');
+  }
+
+  _scheduleFetch(playerId) {
+    const now = Date.now();
+    if (now - (this._lastFetch || 0) < 10000) return; // at most once per 10s
+    this._lastFetch = now;
+    this._fetchFromServer(playerId).catch(() => { /* offline, ignore */ });
   }
 
   _refreshAll() {
@@ -150,7 +172,7 @@ export class LeaderboardManager {
         entries: ranked.slice(0, 100),
         playerRank,
         totalPlayers: sorted.length,
-        rewardPool: PERIODS[period].rewardPool,
+        rewardPool: board.rewardPool || PERIODS[period].rewardPool,
         countdown: {
           remainingMs,
           formatted: formatCountdown(remainingMs),

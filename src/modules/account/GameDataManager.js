@@ -81,6 +81,22 @@ export class GameDataManager {
     return true;
   }
 
+  setScore(score) {
+    if (!this._data || typeof score !== 'number' || score < 0) return false;
+    this._data.score = Math.floor(score);
+    this._save();
+    this.events.emit('gamedata:scoreChange', { score: this._data.score, source: 'sync' });
+    return true;
+  }
+
+  setDiamonds(diamonds) {
+    if (!this._data || typeof diamonds !== 'number' || diamonds < 0) return false;
+    this._data.diamonds = Math.floor(diamonds);
+    this._save();
+    this.events.emit('gamedata:diamondChange', { diamonds: this._data.diamonds, source: 'sync' });
+    return true;
+  }
+
   addDiamonds(amount, source = 'unknown') {
     if (!this._data || amount <= 0) return false;
     this._data.diamonds += amount;

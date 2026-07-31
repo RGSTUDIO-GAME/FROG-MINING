@@ -44,6 +44,7 @@ export default async function authRoutes(fastify) {
       db.prepare(
         'INSERT INTO players (id, username, telegram_id, avatar, device_id, created_at, updated_at, last_login, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).run(id, finalName, tgId, avatar || '🐸', deviceId || null, now, now, now, 'active');
+      db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       markDataChanged();
     } else {
@@ -73,6 +74,7 @@ export default async function authRoutes(fastify) {
       db.prepare(
         'INSERT INTO players (id, username, device_id, created_at, updated_at, last_login, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
       ).run(id, finalName, deviceId, now, now, now, 'active');
+      db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       markDataChanged();
     } else {

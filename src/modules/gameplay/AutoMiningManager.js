@@ -69,9 +69,12 @@ export class AutoMiningManager {
       this._startTime = result.data.startTime;
       this._endTime = result.data.endTime;
 
-      // Update local diamonds
-      this.gameDataManager.spendDiamonds(pkg.price, 'auto-mining');
-      this.gameDataManager.addDiamonds(0, 'sync'); // Trigger UI update
+      // Sync the authoritative diamond balance from the server response.
+      if (typeof result.data?.diamonds === 'number') {
+        this.gameDataManager.setDiamonds(result.data.diamonds);
+      } else {
+        this.gameDataManager.spendDiamonds(pkg.price, 'auto-mining');
+      }
 
       this._saveState();
       this._startTimer();

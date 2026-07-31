@@ -123,11 +123,13 @@ export class MailManager {
 
     const account = this.accountManager.getAccount();
 
-    // Claim on server
+    // Claim on server — the server is the only source of truth for rewards.
     const result = await Api.claimMail(account.id, mailId);
     if (result.success) {
-      // Update local diamonds from server
-      this.gameDataManager.addDiamonds(mail.rewardAmount, 'mail');
+      // Sync the authoritative diamond balance from the server response.
+      if (typeof result.data?.diamonds === 'number') {
+        this.gameDataManager.setDiamonds(result.data.diamonds);
+      }
       mail.claimStatus = 'claimed';
       mail.read = true;
       this._save(account.id);
@@ -135,15 +137,17 @@ export class MailManager {
       return { success: true, reward: mail.rewardAmount };
     }
 
-    // Fallback: claim locally
-    if (mail.rewardType === 'diamond') {
-      this.gameDataManager.addDiamonds(mail.rewardAmount, 'mail');
+    // Server rejected the claim — mirror the server state locally.
+    const errMsg = (result.error || '').toLowerCase();
+    if (errMsg.includes('already')) mail.claimStatus = 'claimed';
+    else if (errMsg.includes('expired')) mail.claimStatus = 'expired';
+    if (mail.claimStatus === 'claimed' || mail.claimStatus === 'expired') {
+      mail.read = true;
+      this._save(account.id);
     }
-    mail.claimStatus = 'claimed';
-    mail.read = true;
-    this._save(account.id);
-    this.events.emit('mail:claim', { mailId, reward: mail.rewardAmount });
-    return { success: true, reward: mail.rewardAmount };
+    this.events.emit('mail:claim', { mailId });
+
+    return { success: false, error: result.error || 'Claim gagal, coba lagi' };
   }
 
   deleteMail(mailId) {
