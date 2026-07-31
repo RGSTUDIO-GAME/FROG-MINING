@@ -142,5 +142,6 @@ if (pc.count === 0) {
 try { db.exec("ALTER TABLE players ADD COLUMN email TEXT"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN password_hash TEXT"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN device_id TEXT"); } catch {}
+try { db.exec("ALTER TABLE players ADD COLUMN telegram_id TEXT"); } catch {}
 
 export default db;

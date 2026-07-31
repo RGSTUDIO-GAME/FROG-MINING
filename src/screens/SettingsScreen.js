@@ -69,7 +69,6 @@ export class SettingsScreen {
           </div>
         </div>
 
-        <button class="settings-logout-btn" id="settings-logout">Keluar</button>
       </div>
     `;
 
@@ -85,12 +84,6 @@ export class SettingsScreen {
 
     this.el.querySelector('#settings-back').addEventListener('click', () => {
       this.events.emit('nav:change', '/');
-    });
-
-    this.el.querySelector('#settings-logout').addEventListener('click', () => {
-      const keys = Object.keys(localStorage).filter(k => !k.includes(':accounts'));
-      keys.forEach(k => localStorage.removeItem(k));
-      window.location.reload();
     });
 
     Logger.debug('SettingsScreen', 'Shown');

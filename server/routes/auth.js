@@ -2,7 +2,85 @@ import { v4 as uuidv4 } from 'uuid';
 import db, { hashPassword } from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
 
+function makeUniqueUsername(base) {
+  const clean = String(base || 'Pemain').trim().replace(/\s+/g, '_').slice(0, 12) || 'Pemain';
+  let candidate = clean;
+  let n = 0;
+  while (db.prepare('SELECT id FROM players WHERE username = ?').get(candidate)) {
+    n++;
+    candidate = clean + n;
+  }
+  return candidate;
+}
+
+function safePlayer(player, now) {
+  return {
+    id: player.id,
+    username: player.username,
+    avatar: player.avatar,
+    total_score: player.total_score,
+    total_diamonds: player.total_diamonds,
+    created_at: player.created_at,
+    last_login: now || player.last_login,
+    status: player.status,
+  };
+}
+
 export default async function authRoutes(fastify) {
+  // Telegram Mini App auto-login (create account if missing)
+  fastify.post('/api/auth/telegram', async (request, reply) => {
+    const { telegramId, username, avatar, deviceId } = request.body || {};
+    if (!telegramId) {
+      return reply.code(400).send({ status: 'error', message: 'Telegram ID diperlukan' });
+    }
+
+    const tgId = String(telegramId);
+    const now = new Date().toISOString();
+    let player = db.prepare('SELECT * FROM players WHERE telegram_id = ?').get(tgId);
+
+    if (!player) {
+      const id = uuidv4();
+      const finalName = makeUniqueUsername(username);
+      db.prepare(
+        'INSERT INTO players (id, username, telegram_id, avatar, device_id, created_at, updated_at, last_login, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, finalName, tgId, avatar || '🐸', deviceId || null, now, now, now, 'active');
+      player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
+      markDataChanged();
+    } else {
+      db.prepare(
+        'UPDATE players SET username = ?, avatar = ?, device_id = COALESCE(?, device_id), last_login = ?, updated_at = ? WHERE id = ?'
+      ).run(username || player.username, avatar || player.avatar, deviceId || null, now, now, player.id);
+      player = db.prepare('SELECT * FROM players WHERE id = ?').get(player.id);
+    }
+
+    return reply.send({ status: 'success', message: 'Selamat datang', data: { player: safePlayer(player, now) } });
+  });
+
+  // Device auto-login for web fallback (anonymous, one account per device)
+  fastify.post('/api/auth/device', async (request, reply) => {
+    const { deviceId, username } = request.body || {};
+    if (!deviceId) {
+      return reply.code(400).send({ status: 'error', message: 'Device ID diperlukan' });
+    }
+
+    const now = new Date().toISOString();
+    let player = db.prepare('SELECT * FROM players WHERE device_id = ?').get(deviceId);
+
+    if (!player) {
+      const id = uuidv4();
+      const finalName = makeUniqueUsername(username || 'Pemain' + Math.floor(1000 + Math.random() * 9000));
+      db.prepare(
+        'INSERT INTO players (id, username, device_id, created_at, updated_at, last_login, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, finalName, deviceId, now, now, now, 'active');
+      player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
+      markDataChanged();
+    } else {
+      db.prepare('UPDATE players SET last_login = ?, updated_at = ? WHERE id = ?').run(now, now, player.id);
+    }
+
+    return reply.send({ status: 'success', message: 'Selamat datang', data: { player: safePlayer(player, now) } });
+  });
+
   // Register
   fastify.post('/api/auth/register', async (request, reply) => {
     const { username, email, password, deviceId } = request.body || {};
@@ -94,13 +172,13 @@ export default async function authRoutes(fastify) {
       db.prepare('UPDATE players SET device_id = ? WHERE id = ?').run(deviceId, player.id);
     }
 
-    const safePlayer = {
+    const safe = {
       id: player.id, username: player.username, avatar: player.avatar,
       total_score: player.total_score, total_diamonds: player.total_diamonds,
       created_at: player.created_at, last_login: player.last_login, status: player.status,
     };
 
-    return reply.send({ status: 'success', message: 'Login berhasil', data: { player: safePlayer } });
+    return reply.send({ status: 'success', message: 'Login berhasil', data: { player: safe } });
   });
 
   // Session check

@@ -18,7 +18,6 @@ import { ScreenManager } from '@ui/ScreenManager.js';
 import { showPopup } from '@ui/components/Popup.js';
 
 import { SplashScreen } from '@screens/SplashScreen.js';
-import { LandingScreen } from '@screens/LandingScreen.js';
 import { HomeScreen } from '@screens/HomeScreen.js';
 import { ShopScreen } from '@screens/ShopScreen.js';
 import { LeaderboardScreen } from '@screens/LeaderboardScreen.js';
@@ -57,11 +56,6 @@ export class Game {
 
     const splash = new SplashScreen(this.events);
     this.events.on('splash:complete', () => this._checkAndRoute(app));
-    this.events.on('landing:start', (data) => {
-      if (data.mode === 'login') this._handleLogin(app, data.email, data.password);
-      else this._handleRegister(app, data.username, data.email, data.password);
-    });
-    this.events.on('account:logout', () => { this._account = null; this._showLanding(app); });
 
     splash.show(app);
     this._running = true;
@@ -69,55 +63,22 @@ export class Game {
   }
 
   async _checkAndRoute(app) {
-    const { hasAccount, account } = this.accountManager.checkSession();
-    if (hasAccount && account) {
-      this._account = account;
-      this._initManagers();
-      this._startGame(app);
-    } else {
-      this._showLanding(app);
-    }
-  }
-
-  _showLanding(app) {
-    app.innerHTML = '';
-    const landing = new LandingScreen(this.events);
-    landing.show(app);
-  }
-
-  async _handleRegister(app, username, email, password) {
     try {
-      const result = await this.accountManager.register(username, email, password);
-      if (!result.success) {
-        showPopup(result.error || 'Gagal membuat akun', 'error');
-        return;
-      }
-      showPopup('Akun berhasil dibuat! Silakan masuk.', 'success');
-      setTimeout(() => {
-        this.events.emit('landing:showLogin', { email });
-      }, 1500);
-    } catch (err) {
-      Logger.error('Game', 'Register failed', err);
-      showPopup('Gagal membuat akun. Coba lagi.', 'error');
-    }
-  }
-
-  async _handleLogin(app, email, password) {
-    try {
-      const result = await this.accountManager.login(email, password);
-      if (!result.success) { showPopup(result.error || 'Login gagal', 'error'); return; }
-      this._account = result.account;
-      try {
-        await this._initManagers();
-        await this._startGame(app);
-      } catch (err) {
-        Logger.error('Game', 'Start failed after login', err);
-        showPopup('Gagal memuat game. Coba lagi.', 'error');
+      const result = await this.accountManager.autoLogin();
+      if (result && result.account) {
+        this._account = result.account;
       }
     } catch (err) {
-      Logger.error('Game', 'Login failed', err);
-      showPopup('Login gagal. Coba lagi.', 'error');
+      Logger.error('Game', 'Auto-login failed', err);
     }
+
+    if (!this._account) {
+      const account = this.accountManager.getAccount();
+      if (account) this._account = account;
+    }
+
+    await this._initManagers();
+    await this._startGame(app);
   }
 
   async _initManagers() {

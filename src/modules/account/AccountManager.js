@@ -29,6 +29,53 @@ export class AccountManager {
     }
   }
 
+  /**
+   * Auto-login — Telegram Mini App users are identified by their Telegram ID.
+   * Outside Telegram (web), a per-device anonymous account is used.
+   * No registration form, no logout.
+   */
+  async autoLogin() {
+    const deviceId = this._getDeviceId();
+    const tg = this._getTelegramUser();
+
+    let res = null;
+    if (tg) {
+      const name = tg.username || tg.first_name || ('Pemain' + tg.id);
+      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId);
+    } else {
+      res = await Api.deviceLogin(deviceId, null);
+    }
+
+    if (res && res.success) {
+      const p = res.data.player;
+      const account = this._fromServerPlayer(p, null, null);
+      this._activateSession(account);
+      this._saveAccount(account);
+      Logger.info('Account', 'Auto-login: ' + account.username);
+      this.events.emit('account:login', account);
+      return { success: true, account, server: true };
+    }
+
+    // Offline fallback — local anonymous account so the game always opens
+    const fallbackName = tg ? (tg.username || tg.first_name || 'Pemain') : 'Pemain';
+    const account = {
+      id: deviceId || generateUUID(),
+      username: fallbackName,
+      email: null,
+      avatar: (tg && tg.photo_url) || '🐸',
+      totalScore: 0,
+      totalDiamond: 0,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      accountStatus: 'active',
+      offline: true,
+    };
+    this._activateSession(account);
+    Logger.info('Account', 'Auto-login (offline): ' + account.username);
+    this.events.emit('account:login', account);
+    return { success: true, account, server: false };
+  }
+
   async register(username, email, password) {
     const trimmedUser = username.trim();
     const trimmedEmail = email.trim().toLowerCase();
@@ -144,6 +191,14 @@ export class AccountManager {
     } catch {
       return null;
     }
+  }
+
+  _getTelegramUser() {
+    try {
+      const tg = window.Telegram?.WebApp?.initDataUnsafe;
+      if (tg && tg.user && tg.user.id) return tg.user;
+    } catch { /* not in Telegram */ }
+    return null;
   }
 
   _activateSession(account) {

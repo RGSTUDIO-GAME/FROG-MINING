@@ -5,6 +5,12 @@ import { Logger } from '@utils/logger.js';
  * Frog Mining — Entry Point
  */
 function bootstrap() {
+  // Telegram Mini App — mark app ready & expand to full screen
+  try {
+    window.Telegram?.WebApp?.ready?.();
+    window.Telegram?.WebApp?.expand?.();
+  } catch { /* not in Telegram */ }
+
   const game = new Game();
   game.init();
 

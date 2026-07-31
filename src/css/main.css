@@ -20,7 +20,6 @@
 
 /* ── Screens ── */
 @import url('./screens/splash.css');
-@import url('./screens/landing.css');
 @import url('./screens/home.css');
 @import url('./screens/shop.css');
 @import url('./screens/leaderboard.css');
