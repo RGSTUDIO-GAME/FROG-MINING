@@ -31,7 +31,7 @@ export class HomeScreen {
           <div class="frog-ring frog-ring-1"></div>
           <div class="frog-ring frog-ring-2"></div>
           <div class="frog-glow" id="frog-glow"></div>
-          <div class="frog-head" id="frog-head"><img src="/frog-mining/assets/images/frog-tap.png" alt="Frog" class="frog-img" draggable="false" /></div>
+          <div class="frog-head" id="frog-head"><img src="${import.meta.env.BASE_URL}assets/images/frog-tap.png" alt="Frog" class="frog-img" draggable="false" /></div>
           <div class="frog-shadow"></div>
         </div>
       </div>

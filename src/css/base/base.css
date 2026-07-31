@@ -18,7 +18,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   position: relative;
-  background: url('/frog-mining/assets/bg-fantasy.jpg') center top / cover no-repeat fixed;
+  background: url('/FROG-MINING/assets/bg-fantasy.jpg') center top / cover no-repeat fixed;
 }
 
 #app::before {
