@@ -184,10 +184,12 @@ export class SoundManager {
     const ctx = this._audioCtx;
     const now = ctx.currentTime;
 
-    // Double croak "kro-krok" with wobble — lucu dan ringan
-    for (let i = 0; i < 2; i++) {
-      const start = now + i * 0.16;
-      const dur = 0.14;
+    // Triple croak "kro-krok-kek" with wobble — lucu dan ringan
+    const freqs = [150, 130, 200];
+    const durs = [0.14, 0.14, 0.1];
+    for (let i = 0; i < 3; i++) {
+      const start = now + i * 0.15;
+      const dur = durs[i];
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -196,7 +198,7 @@ export class SoundManager {
       const filter = ctx.createBiquadFilter();
 
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150 - i * 20, start);
+      osc.frequency.setValueAtTime(freqs[i], start);
       osc.frequency.exponentialRampToValueAtTime(80, start + dur);
 
       // Wobble 30Hz membuat suara khas katak
