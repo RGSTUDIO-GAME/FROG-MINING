@@ -34,7 +34,7 @@ export function ensureWelcomeGift(playerId) {
     'Selamat datang di Frog Mining! Nikmati 1.000.000 Diamond sebagai hadiah sambutan. Gunakan untuk Auto Mining! 🐸⛏️',
     WELCOME_CATEGORY,
     'diamond',
-    1000000,
+    5000,
     'unclaimed',
     now.toISOString(),
     expiredAt

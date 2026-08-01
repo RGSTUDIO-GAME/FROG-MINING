@@ -22,8 +22,9 @@ const DEFAULT_DISTRIBUTION = [
   { from: 1, to: 1, percent: 12 },
   { from: 2, to: 3, percent: 8 },
   { from: 4, to: 10, percent: 20 },
-  { from: 11, to: 50, percent: 35 },
-  { from: 51, to: 100, percent: 20 },
+  { from: 11, to: 50, percent: 30 },
+  { from: 51, to: 100, percent: 15 },
+  { from: 101, to: null, percent: 10 },
 ];
 
 const TYPE_LABEL = { daily: 'Harian', weekly: 'Mingguan', monthly: 'Bulanan' };
@@ -53,29 +54,31 @@ function getMailExpiryDays() {
  * Allocate the reward pool to ranks 1..winnerCount using percentage tiers.
  * Leftover diamonds (rounding) are added to rank 1 so the pool is fully used.
  */
-export function computeRewards(entries, pool, distribution, winnerCount) {
+export function computeRewards(entries, pool, distribution) {
   const rewards = new Map();
   let allocated = 0;
   const tiers = [...distribution].sort((a, b) => (a.from || 0) - (b.from || 0));
+  const total = entries.length;
 
   for (const tier of tiers) {
     const from = Math.max(1, tier.from || 1);
-    const to = Math.min(tier.to || from, winnerCount);
-    if (from > winnerCount) continue;
+    // tier.to === null berarti "semua peserta dari peringkat ini ke bawah"
+    const to = tier.to == null ? total : Math.min(tier.to, total);
+    if (from > total) continue;
 
     const slice = Math.floor((pool * (tier.percent || 0)) / 100);
     const count = Math.max(1, to - from + 1);
     const per = Math.floor(slice / count);
     if (per <= 0) continue;
 
-    for (let rank = from; rank <= to && rank <= entries.length; rank++) {
+    for (let rank = from; rank <= to; rank++) {
       rewards.set(rank, (rewards.get(rank) || 0) + per);
       allocated += per;
     }
   }
 
   const leftover = pool - allocated;
-  if (leftover > 0 && entries.length > 0) {
+  if (leftover > 0 && total > 0) {
     rewards.set(1, (rewards.get(1) || 0) + leftover);
   }
 
@@ -110,7 +113,7 @@ export function distributeSeason(season) {
       return { winners: 0 };
     }
 
-    const rewards = computeRewards(entries, pool, getDistribution(), getWinnerCount());
+    const rewards = computeRewards(entries, pool, getDistribution());
     let winners = 0;
 
     entries.forEach((entry, i) => {

@@ -6,9 +6,9 @@ import db from '../db/database.js';
  * All durations and reward pools are configurable via system_settings.
  */
 export const PERIODS = {
-  daily: { label: 'Daily', rewardPool: 1000000 },
-  weekly: { label: 'Weekly', rewardPool: 5000000 },
-  monthly: { label: 'Monthly', rewardPool: 20000000 },
+  daily: { label: 'Daily', rewardPool: 20000 },
+  weekly: { label: 'Weekly', rewardPool: 100000 },
+  monthly: { label: 'Monthly', rewardPool: 500000 },
 };
 
 export function getSetting(key, fallback = null) {

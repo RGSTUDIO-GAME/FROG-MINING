@@ -3,9 +3,9 @@ import { Logger } from '@utils/logger.js';
 import { Api } from '@utils/api.js';
 
 const PERIODS = {
-  daily: { rewardPool: 1000000 },
-  weekly: { rewardPool: 5000000 },
-  monthly: { rewardPool: 20000000 },
+  daily: { rewardPool: 20000 },
+  weekly: { rewardPool: 100000 },
+  monthly: { rewardPool: 500000 },
 };
 
 function getPeriodEndTime(type) {
