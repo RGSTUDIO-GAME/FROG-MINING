@@ -151,7 +151,7 @@ export class SoundManager {
    */
   playTap() {
     if (!this._enabled || !this._audioCtx) return;
-    this._playBoing();
+    this._playFrog();
   }
 
   /**
@@ -180,23 +180,48 @@ export class SoundManager {
 
   // ── Sound generators ──
 
-  _playBoing() {
+  _playFrog() {
     const ctx = this._audioCtx;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const now = ctx.currentTime;
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(400, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1);
+    // Double croak "kro-krok" with wobble — lucu dan ringan
+    for (let i = 0; i < 2; i++) {
+      const start = now + i * 0.16;
+      const dur = 0.14;
 
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150 - i * 20, start);
+      osc.frequency.exponentialRampToValueAtTime(80, start + dur);
 
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.15);
+      // Wobble 30Hz membuat suara khas katak
+      lfo.type = 'sine';
+      lfo.frequency.setValueAtTime(30, start);
+      lfoGain.gain.setValueAtTime(0.16, start);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(700, start);
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.3, start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      lfo.connect(lfoGain);
+      lfoGain.connect(gain.gain);
+
+      osc.start(start);
+      osc.stop(start + dur + 0.02);
+      lfo.start(start);
+      lfo.stop(start + dur + 0.02);
+    }
   }
 
   _playChime() {
