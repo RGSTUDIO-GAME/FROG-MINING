@@ -105,6 +105,7 @@ export class Game {
     this.header?.updateRank(this.scoreManager.getRank());
     shop?.updateDiamonds(this.gameDataManager.getDiamonds());
     if (profile) this._updateProfile(profile);
+    this._refreshReferralInfo(account);
     if (mail) this._refreshMail(mail);
     const lbScreen = this.screenManager?.getScreen('leaderboard');
     if (lbScreen) this._refreshLeaderboard(lbScreen);
@@ -164,7 +165,10 @@ export class Game {
         home.updateScore(this.scoreManager.getScore());
         this._refreshAutoMiningUI(home);
       }
-      if (to.name === 'profile') this._updateProfile(profile);
+      if (to.name === 'profile') {
+        this._updateProfile(profile);
+        this._refreshReferralInfo(this._account || this.accountManager.getAccount());
+      }
       if (to.name === 'shop') { shop.updateDiamonds(this.gameDataManager.getDiamonds()); this._refreshShopMining(shop); }
       if (to.name === 'leaderboard') this._refreshLeaderboard(leaderboard);
       if (to.name === 'mail') this._refreshMail(mail);
@@ -233,27 +237,7 @@ export class Game {
     this.events.on('settings:stateRequest', () => {
       this.events.emit('settings:state', this.soundManager.getState());
       const account = this._account || this.accountManager.getAccount();
-      if (!account) return;
-      const send = (code) => {
-        const inTelegram = !!window.Telegram?.WebApp;
-        const base = inTelegram
-          ? 'https://t.me/' + Config.APP.TELEGRAM_BOT + '?startapp=ref_'
-          : window.location.origin + '/?ref=';
-        this.events.emit('settings:referral', {
-          inviteUrl: base + code,
-          code,
-        });
-      };
-      if (account.refCode) {
-        send(account.refCode);
-      } else {
-        Api.getReferral(account.id).then((res) => {
-          if (res.success && res.data && res.data.refCode) {
-            this.accountManager.updateAccount({ refCode: res.data.refCode });
-            send(res.data.refCode);
-          }
-        }).catch(() => {});
-      }
+      if (account) this._refreshReferralInfo(account);
     });
 
     home.updateScore(this.scoreManager.getScore());
@@ -334,7 +318,36 @@ export class Game {
       diamonds: this.gameDataManager.getDiamonds(),
       joinDate: this._account.createdAt,
       playerId: this._account.id,
+      invitedCount: this._account.invitedCount || 0,
     });
+  }
+
+  async _refreshReferralInfo(account) {
+    if (!account?.id) return;
+    const res = await Api.getReferral(account.id);
+    if (!res.success || !res.data) return;
+
+    const code = res.data.refCode || account.refCode;
+    if (!code) return;
+
+    this.accountManager.updateAccount({
+      refCode: code,
+      invitedCount: res.data.invitedCount || 0,
+    });
+    this._account = this.accountManager.getAccount();
+
+    const inTelegram = !!window.Telegram?.WebApp;
+    const base = inTelegram
+      ? 'https://t.me/' + Config.APP.TELEGRAM_BOT + '?startapp=ref_'
+      : window.location.origin + '/?ref=';
+    this.events.emit('settings:referral', {
+      inviteUrl: base + code,
+      code,
+      invitedCount: res.data.invitedCount || 0,
+    });
+
+    const profile = this.screenManager?.getScreen('profile');
+    if (profile) this._updateProfile(profile);
   }
 
   getState() {

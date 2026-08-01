@@ -242,11 +242,13 @@ export default async function authRoutes(fastify) {
       return reply.code(404).send({ status: 'error', message: 'Player not found' });
     }
     const refCode = ensureRefCode(playerId);
+    const invitedCount = db.prepare('SELECT COUNT(*) AS c FROM players WHERE referrer_id = ?').get(playerId).c;
     return reply.send({
       status: 'success',
       data: {
         refCode,
         inviteUrl: (request.protocol + '://' + request.host) + '/?ref=' + refCode,
+        invitedCount,
         inviterBonus: 500,
         friendBonus: 200,
         commissionPercent: 5,

@@ -1,7 +1,10 @@
 .profile-card {
   text-align: center;
   padding: var(--space-lg);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-md);
 }
@@ -26,11 +29,12 @@
   font-family: var(--font-family-display);
   font-size: var(--font-size-xl);
   font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .profile-joined {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
   margin-top: var(--space-xs);
 }
 
@@ -43,7 +47,10 @@
 
 .stat-item {
   text-align: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   padding: var(--space-md) var(--space-sm);
 }
@@ -64,12 +71,15 @@
 
 .stat-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.85);
   margin-top: var(--space-xs);
 }
 
 .profile-best {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   padding: var(--space-md);
 }
@@ -77,6 +87,7 @@
 .profile-best-title {
   font-weight: 700;
   margin-bottom: var(--space-sm);
+  color: var(--color-text-primary);
 }
 
 .profile-best-item {
@@ -85,6 +96,7 @@
   padding: var(--space-xs) 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .profile-best-item:last-child {
@@ -97,7 +109,7 @@
 
 .profile-id {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.75);
   font-family: monospace;
   margin-top: var(--space-xs);
 }

@@ -41,6 +41,10 @@ export class ProfileScreen {
           <div class="stat-value crystal" id="profile-diamond">💎 0</div>
           <div class="stat-label">Diamond</div>
         </div>
+        <div class="stat-item">
+          <div class="stat-value" id="profile-referrals">0</div>
+          <div class="stat-label">👥 Undangan</div>
+        </div>
       </div>
 
       <div class="profile-best">
@@ -73,6 +77,7 @@ export class ProfileScreen {
     const score = this.el.querySelector('#profile-score');
     const taps = this.el.querySelector('#profile-taps');
     const diamond = this.el.querySelector('#profile-diamond');
+    const referrals = this.el.querySelector('#profile-referrals');
     const loginMode = this.el.querySelector('#profile-login-mode');
 
     if (avatar) {
@@ -95,6 +100,7 @@ export class ProfileScreen {
     if (score) score.textContent = (data.score || 0).toLocaleString();
     if (taps) taps.textContent = (data.taps || 0).toLocaleString();
     if (diamond) diamond.textContent = '💎 ' + (data.diamonds || 0).toLocaleString();
+    if (referrals) referrals.textContent = (data.invitedCount || 0).toLocaleString();
   }
 
   hide() { this.el?.remove(); }
