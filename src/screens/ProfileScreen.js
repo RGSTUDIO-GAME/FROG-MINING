@@ -1,5 +1,4 @@
 import { Logger } from '@utils/logger.js';
-import { Api } from '@utils/api.js';
 
 /**
  * ProfileScreen — Displays player profile with real data.
@@ -8,7 +7,6 @@ export class ProfileScreen {
   constructor(eventBus) {
     this.events = eventBus;
     this.el = null;
-    this._playerId = null;
   }
 
   show(container) {
@@ -24,8 +22,6 @@ export class ProfileScreen {
     content.innerHTML = `
       <div class="profile-card">
         <div class="profile-avatar" id="profile-avatar">🐸</div>
-        <button class="profile-avatar-btn" id="profile-avatar-btn">📷 Ganti Foto</button>
-        <input type="file" id="profile-avatar-input" accept="image/png,image/jpeg,image/webp" hidden>
         <div class="profile-name" id="profile-name">Guest</div>
         <div class="profile-id" id="profile-id"></div>
         <div class="profile-joined" id="profile-joined">Joined: --</div>
@@ -68,64 +64,7 @@ export class ProfileScreen {
     this.el.appendChild(header);
     this.el.appendChild(content);
     container.appendChild(this.el);
-
-    this.el.querySelector('#profile-avatar-btn').addEventListener('click', () => {
-      this.el.querySelector('#profile-avatar-input').click();
-    });
-    this.el.querySelector('#profile-avatar-input').addEventListener('change', (e) => {
-      this._handleAvatarFile(e.target.files && e.target.files[0]);
-      e.target.value = '';
-    });
-
     Logger.debug('ProfileScreen', 'Shown');
-  }
-
-  _handleAvatarFile(file) {
-    if (!file) return;
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-      this.events.emit('profile:avatarError', 'Format foto harus PNG/JPG/WebP');
-      return;
-    }
-    if (file.size > 3 * 1024 * 1024) {
-      this.events.emit('profile:avatarError', 'Foto terlalu besar (maks 3 MB)');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => this._resizeAvatar(reader.result);
-    reader.onerror = () => this.events.emit('profile:avatarError', 'Gagal membaca foto');
-    reader.readAsDataURL(file);
-  }
-
-  _resizeAvatar(dataUrl) {
-    const img = new Image();
-    img.onload = () => {
-      const size = 128;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const ratio = Math.max(size / img.width, size / img.height);
-      const w = size / ratio;
-      const h = size / ratio;
-      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-      this._uploadAvatar(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => this.events.emit('profile:avatarError', 'Gagal memproses foto');
-    img.src = dataUrl;
-  }
-
-  async _uploadAvatar(dataUrl) {
-    if (!this._playerId) {
-      this.events.emit('profile:avatarError', 'Akun belum siap, coba lagi nanti');
-      return;
-    }
-    const res = await Api.uploadAvatar(this._playerId, dataUrl);
-    if (res.success && res.data && res.data.avatar) {
-      this.events.emit('profile:avatarChanged', res.data.avatar);
-    } else {
-      this.events.emit('profile:avatarError', res.error || 'Gagal mengubah foto');
-    }
   }
 
   update(data) {
@@ -148,7 +87,6 @@ export class ProfileScreen {
         avatar.textContent = data.avatar || '🐸';
       }
     }
-    this._playerId = data.playerId || this._playerId;
     if (name) name.textContent = data.username || 'Guest';
     if (loginMode) {
       loginMode.textContent = data.loginMode || '';

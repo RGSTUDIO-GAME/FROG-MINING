@@ -60,10 +60,6 @@ export const Api = {
     return this._request('GET', '/api/auth/session/' + playerId);
   },
 
-  uploadAvatar(playerId, data) {
-    return this._request('POST', '/api/players/' + playerId + '/avatar', { data });
-  },
-
   // Score
   submitTap(playerId, amount = 1) {
     return this._request('POST', '/api/score/tap', { playerId, amount });
