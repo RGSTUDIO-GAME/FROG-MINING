@@ -186,7 +186,7 @@ export class SettingsScreen {
     try {
       if (window.Telegram?.WebApp?.openTelegramLink) {
         const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(this._inviteUrl) +
-          '&text=' + encodeURIComponent('Main yuk di Frog Mining! 🐸⛏️ Kamu dapat 200 Diamond, aku dapat 500 Diamond + komisi 5%.');
+          '&text=' + encodeURIComponent('Main Bareng di Frogmining dan Ambil Bonus 5000 Diamond');
         window.Telegram.WebApp.openTelegramLink(shareUrl);
         return;
       }
