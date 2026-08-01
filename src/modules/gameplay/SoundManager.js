@@ -3,6 +3,7 @@ import { Config } from '@core/Config.js';
 
 const MUSIC_SRC = '/assets/sounds/bg_morning.mp3';
 const MUSIC_GAP_MS = 5000;
+const MUSIC_FADE_MS = 3000;
 
 /**
  * SoundManager — Handles all game audio.
@@ -58,15 +59,28 @@ export class SoundManager {
         this._music = new Audio(MUSIC_SRC);
         this._music.preload = 'auto';
         this._music.volume = this._musicVolume;
+        this._music.addEventListener('timeupdate', () => this._handleMusicTimeupdate());
         this._music.addEventListener('ended', () => this._scheduleMusicReplay());
       } catch (e) {
         Logger.warn('SoundManager', 'Music element gagal dibuat');
         return;
       }
     }
+    this._music.volume = this._musicVolume;
     this._music.currentTime = 0;
     const p = this._music.play();
     if (p && p.catch) p.catch(() => { /* autoplay diblokir browser, coba lagi saat interaksi */ });
+  }
+
+  _handleMusicTimeupdate() {
+    if (!this._musicEnabled || !this._music) return;
+    const duration = this._music.duration;
+    if (!duration || !isFinite(duration) || duration <= 0) return;
+    const fadeSec = MUSIC_FADE_MS / 1000;
+    const remaining = duration - this._music.currentTime;
+    if (remaining > 0 && remaining <= fadeSec) {
+      this._music.volume = Math.max(0, this._musicVolume * (remaining / fadeSec));
+    }
   }
 
   _scheduleMusicReplay() {
