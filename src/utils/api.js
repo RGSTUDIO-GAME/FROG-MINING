@@ -36,20 +36,24 @@ export const Api = {
   },
 
   // Auth
-  register(username, email, password, deviceId) {
-    return this._request('POST', '/api/auth/register', { username, email, password, deviceId });
+  register(username, email, password, deviceId, ref) {
+    return this._request('POST', '/api/auth/register', { username, email, password, deviceId, ref });
   },
 
   login(email, password, deviceId) {
     return this._request('POST', '/api/auth/login', { email, password, deviceId });
   },
 
-  telegramLogin(telegramId, username, avatar, deviceId, firstName) {
-    return this._request('POST', '/api/auth/telegram', { telegramId, username, firstName, avatar, deviceId });
+  telegramLogin(telegramId, username, avatar, deviceId, firstName, ref) {
+    return this._request('POST', '/api/auth/telegram', { telegramId, username, firstName, avatar, deviceId, ref });
   },
 
-  deviceLogin(deviceId, username) {
-    return this._request('POST', '/api/auth/device', { deviceId, username });
+  deviceLogin(deviceId, username, ref) {
+    return this._request('POST', '/api/auth/device', { deviceId, username, ref });
+  },
+
+  getReferral(playerId) {
+    return this._request('GET', '/api/referral/' + playerId);
   },
 
   getSession(playerId) {

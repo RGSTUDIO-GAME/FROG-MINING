@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import db, { hashPassword } from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
 import { ensureWelcomeGift } from '../services/gifts.js';
+import { bindReferral, ensureRefCode } from '../services/referral.js';
 
 function makeUniqueUsername(base, maxLen = 32) {
   const clean = String(base || 'Pemain').trim().replace(/\s+/g, '_').slice(0, maxLen) || 'Pemain';
@@ -32,13 +33,15 @@ function safePlayer(player, now) {
     last_login: now || player.last_login,
     status: player.status,
     telegram_id: player.telegram_id || null,
+    ref_code: player.ref_code || null,
+    referrer_id: player.referrer_id || null,
   };
 }
 
 export default async function authRoutes(fastify) {
   // Telegram Mini App auto-login (create account if missing)
   fastify.post('/api/auth/telegram', async (request, reply) => {
-    const { telegramId, username, firstName, avatar, deviceId } = request.body || {};
+    const { telegramId, username, firstName, avatar, deviceId, ref } = request.body || {};
     if (!telegramId) {
       return reply.code(400).send({ status: 'error', message: 'Telegram ID diperlukan' });
     }
@@ -55,6 +58,7 @@ export default async function authRoutes(fastify) {
       ).run(id, finalName, tgId, avatar || '🐸', deviceId || null, now, now, now, 'active');
       db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
+      bindReferral(id, ref);
       markDataChanged();
     } else {
       const updatedName = cleanName(username || firstName, tgId);
@@ -71,7 +75,7 @@ export default async function authRoutes(fastify) {
 
   // Device auto-login for web fallback (anonymous, one account per device)
   fastify.post('/api/auth/device', async (request, reply) => {
-    const { deviceId, username } = request.body || {};
+    const { deviceId, username, ref } = request.body || {};
     if (!deviceId) {
       return reply.code(400).send({ status: 'error', message: 'Device ID diperlukan' });
     }
@@ -87,6 +91,7 @@ export default async function authRoutes(fastify) {
       ).run(id, finalName, deviceId, now, now, now, 'active');
       db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
+      bindReferral(id, ref);
       markDataChanged();
     } else {
       db.prepare('UPDATE players SET last_login = ?, updated_at = ? WHERE id = ?').run(now, now, player.id);
@@ -99,7 +104,7 @@ export default async function authRoutes(fastify) {
 
   // Register
   fastify.post('/api/auth/register', async (request, reply) => {
-    const { username, email, password, deviceId } = request.body || {};
+    const { username, email, password, deviceId, ref } = request.body || {};
 
     if (!username || !email || !password) {
       return reply.code(400).send({ status: 'error', message: 'Username, email, dan password wajib diisi' });
@@ -150,11 +155,13 @@ export default async function authRoutes(fastify) {
 
     db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
 
+    bindReferral(id, ref);
     markDataChanged();
 
-    const player = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status FROM players WHERE id = ?').get(id);
+    ensureRefCode(id);
+    const playerWithRef = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status, ref_code, referrer_id FROM players WHERE id = ?').get(id);
 
-    return reply.send({ status: 'success', message: 'Akun berhasil dibuat', data: { player } });
+    return reply.send({ status: 'success', message: 'Akun berhasil dibuat', data: { player: playerWithRef } });
   });
 
   // Login
@@ -192,6 +199,7 @@ export default async function authRoutes(fastify) {
       id: player.id, username: player.username, avatar: player.avatar,
       total_score: player.total_score, total_diamonds: player.total_diamonds,
       created_at: player.created_at, last_login: player.last_login, status: player.status,
+      ref_code: player.ref_code || null, referrer_id: player.referrer_id || null,
     };
 
     ensureWelcomeGift(player.id);
@@ -202,7 +210,7 @@ export default async function authRoutes(fastify) {
   // Session check
   fastify.get('/api/auth/session/:playerId', async (request, reply) => {
     const { playerId } = request.params;
-    const player = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status FROM players WHERE id = ?').get(playerId);
+    const player = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status, ref_code, referrer_id FROM players WHERE id = ?').get(playerId);
 
     if (!player) {
       return reply.code(404).send({ status: 'error', message: 'Player not found' });
@@ -217,12 +225,32 @@ export default async function authRoutes(fastify) {
   // Get player
   fastify.get('/api/players/:playerId', async (request, reply) => {
     const { playerId } = request.params;
-    const player = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status FROM players WHERE id = ?').get(playerId);
+    const player = db.prepare('SELECT id, username, avatar, total_score, total_diamonds, created_at, last_login, status, ref_code, referrer_id FROM players WHERE id = ?').get(playerId);
 
     if (!player) {
       return reply.code(404).send({ status: 'error', message: 'Player not found' });
     }
 
     return reply.send({ status: 'success', data: { player } });
+  });
+
+  // Referral info (invite link)
+  fastify.get('/api/referral/:playerId', async (request, reply) => {
+    const { playerId } = request.params;
+    const player = db.prepare('SELECT id, ref_code, referrer_id FROM players WHERE id = ?').get(playerId);
+    if (!player) {
+      return reply.code(404).send({ status: 'error', message: 'Player not found' });
+    }
+    const refCode = ensureRefCode(playerId);
+    return reply.send({
+      status: 'success',
+      data: {
+        refCode,
+        inviteUrl: (request.protocol + '://' + request.host) + '/?ref=' + refCode,
+        inviterBonus: 500,
+        friendBonus: 200,
+        commissionPercent: 5,
+      },
+    });
   });
 }

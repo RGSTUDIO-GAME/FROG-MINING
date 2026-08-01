@@ -125,6 +125,19 @@ db.exec(`
     description TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS referral_bonuses (
+    id TEXT PRIMARY KEY,
+    player_id TEXT NOT NULL,
+    source_player_id TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_ref TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (player_id) REFERENCES players(id),
+    FOREIGN KEY (source_player_id) REFERENCES players(id),
+    UNIQUE(source_type, source_ref)
+  );
 `);
 
 // Seed products
@@ -143,5 +156,8 @@ try { db.exec("ALTER TABLE players ADD COLUMN email TEXT"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN password_hash TEXT"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN device_id TEXT"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN telegram_id TEXT"); } catch {}
+try { db.exec("ALTER TABLE players ADD COLUMN referrer_id TEXT"); } catch {}
+try { db.exec("ALTER TABLE players ADD COLUMN ref_code TEXT"); } catch {}
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_players_ref_code ON players(ref_code)"); } catch {}
 
 export default db;

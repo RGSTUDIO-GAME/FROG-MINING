@@ -65,13 +65,14 @@ export class AccountManager {
   async autoLogin() {
     const deviceId = this._getDeviceId();
     const tg = this._getTelegramUser();
+    const ref = this._getRefParam();
 
     let res = null;
     if (tg) {
       const name = this._friendlyTelegramName(tg);
-      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
+      res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name, ref);
     } else {
-      res = await Api.deviceLogin(deviceId, null);
+      res = await Api.deviceLogin(deviceId, null, ref);
     }
 
     if (res && res.success) {
@@ -96,13 +97,14 @@ export class AccountManager {
     this._reconnectTimer = setInterval(async () => {
       const deviceId = this._getDeviceId();
       const tg = this._getTelegramUser();
+      const ref = this._getRefParam();
       let res = null;
 
       if (tg) {
         const name = this._friendlyTelegramName(tg);
-        res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
+        res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name, ref);
       } else {
-        res = await Api.deviceLogin(deviceId, null);
+        res = await Api.deviceLogin(deviceId, null, ref);
       }
 
       if (res && res.success) {
@@ -122,9 +124,10 @@ export class AccountManager {
     const trimmedUser = username.trim();
     const trimmedEmail = email.trim().toLowerCase();
     const deviceId = this._getDeviceId();
+    const ref = this._getRefParam();
 
     // Try server first (source of truth)
-    const res = await Api.register(trimmedUser, trimmedEmail, password, deviceId);
+    const res = await Api.register(trimmedUser, trimmedEmail, password, deviceId, ref);
     if (res.success) {
       const p = res.data.player;
       const account = this._fromServerPlayer(p, trimmedEmail, password);
@@ -218,6 +221,7 @@ export class AccountManager {
       lastLoginAt: new Date().toISOString(),
       accountStatus: p.status || 'active',
       telegramId: p.telegram_id || null,
+      refCode: p.ref_code || null,
       server: true,
     };
   }
@@ -279,6 +283,19 @@ export class AccountManager {
       const url = new URL(window.location.href);
       return url.searchParams.get(name) || '';
     } catch { return ''; }
+  }
+
+  _getRefParam() {
+    try {
+      const url = new URL(window.location.href);
+      const ref = url.searchParams.get('ref');
+      if (ref) return ref;
+    } catch { /* ignore */ }
+    try {
+      const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+      if (startParam && startParam.startsWith('ref_')) return startParam.slice(4);
+    } catch { /* ignore */ }
+    return null;
   }
 
   _activateSession(account) {

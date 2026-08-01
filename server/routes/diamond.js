@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
+import { payReferralCommission } from '../services/referral.js';
 
 export default async function diamondRoutes(fastify) {
   // Get player diamonds
@@ -62,6 +63,9 @@ export default async function diamondRoutes(fastify) {
     db.prepare(
       'INSERT INTO purchases (id, player_id, product_id, status) VALUES (?, ?, ?, ?)'
     ).run(randomUUID(), playerId, productId, 'completed');
+
+    // Komisi referral 5% ke pengundang (real-time, tanpa mengurangi Diamond teman)
+    payReferralCommission(player.referrer_id, playerId, 'purchase', 'shop-' + productId, totalDiamonds);
 
     markDataChanged();
 

@@ -2,6 +2,7 @@ import { EventBus } from './EventBus.js';
 import { Router } from './Router.js';
 import { Config } from './Config.js';
 import { Logger } from '@utils/logger.js';
+import { Api } from '@utils/api.js';
 
 import { AccountManager } from '@modules/account/AccountManager.js';
 import { GameDataManager } from '@modules/account/GameDataManager.js';
@@ -231,6 +232,24 @@ export class Game {
     this.events.on('settings:musicVolume', (volume) => this.soundManager.setMusicVolume(volume));
     this.events.on('settings:stateRequest', () => {
       this.events.emit('settings:state', this.soundManager.getState());
+      const account = this._account || this.accountManager.getAccount();
+      if (!account) return;
+      const send = (code) => {
+        this.events.emit('settings:referral', {
+          inviteUrl: window.location.origin + '/?ref=' + code,
+          code,
+        });
+      };
+      if (account.refCode) {
+        send(account.refCode);
+      } else {
+        Api.getReferral(account.id).then((res) => {
+          if (res.success && res.data && res.data.refCode) {
+            this.accountManager.updateAccount({ refCode: res.data.refCode });
+            send(res.data.refCode);
+          }
+        }).catch(() => {});
+      }
     });
 
     home.updateScore(this.scoreManager.getScore());

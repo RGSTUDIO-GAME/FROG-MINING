@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import db from '../db/database.js';
 import { ensureSeasons, getSetting, setSetting } from './seasons.js';
+import { payReferralCommission } from './referral.js';
 
 /**
  * RewardsService — Automatic leaderboard reward distribution.
@@ -87,7 +88,7 @@ export function computeRewards(entries, pool, distribution) {
 
 export function distributeSeason(season) {
   const entries = db.prepare(`
-    SELECT l.*, p.username
+    SELECT l.*, p.username, p.referrer_id
     FROM leaderboards l
     JOIN players p ON p.id = l.player_id
     WHERE l.season_id = ?
@@ -135,6 +136,8 @@ export function distributeSeason(season) {
           now.toISOString(),
           expiredAt
         );
+        // Komisi referral 5% ke pengundang (real-time, tanpa mengurangi Diamond teman)
+        payReferralCommission(entry.referrer_id, entry.player_id, 'leaderboard', season.id + ':' + entry.player_id, reward);
         winners++;
       }
     });
