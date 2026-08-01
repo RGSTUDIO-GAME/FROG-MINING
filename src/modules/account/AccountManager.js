@@ -41,7 +41,7 @@ export class AccountManager {
     const tg = this._getTelegramUser();
     const account = {
       id: deviceId || generateUUID(),
-      username: tg ? (tg.username || tg.first_name || 'Pemain') : 'Pemain',
+      username: tg ? (tg.username || ((tg.first_name || '') + (tg.last_name ? ' ' + tg.last_name : '')) || 'Pemain') : 'Pemain',
       email: null,
       avatar: (tg && tg.photo_url) || '🐸',
       totalScore: 0,
@@ -68,7 +68,7 @@ export class AccountManager {
 
     let res = null;
     if (tg) {
-      const name = tg.username || tg.first_name || ('Pemain' + tg.id);
+      const name = tg.username || ((tg.first_name || '') + (tg.last_name ? ' ' + tg.last_name : '')) || ('Pemain' + tg.id);
       res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
     } else {
       res = await Api.deviceLogin(deviceId, null);
@@ -99,7 +99,7 @@ export class AccountManager {
       let res = null;
 
       if (tg) {
-        const name = tg.username || tg.first_name || ('Pemain' + tg.id);
+        const name = tg.username || ((tg.first_name || '') + (tg.last_name ? ' ' + tg.last_name : '')) || ('Pemain' + tg.id);
         res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
       } else {
         res = await Api.deviceLogin(deviceId, null);

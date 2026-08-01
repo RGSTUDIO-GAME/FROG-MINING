@@ -117,11 +117,9 @@ export class LeaderboardManager {
         firstScoreAt: e.firstScoreAt || null,
       }));
 
-      // Merge: server entries win for matching players; keep local-only entries.
-      const localOnly = board.entries.filter(
-        (le) => !serverEntries.some((se) => se.playerId === le.playerId)
-      );
-      board.entries = [...serverEntries, ...localOnly];
+      // Server is the source of truth — replace the local cache entirely so
+      // deleted/old players never linger in the UI.
+      board.entries = [...serverEntries];
 
       if (typeof result.data.playerRank === 'number') {
         board.playerRank = result.data.playerRank;
