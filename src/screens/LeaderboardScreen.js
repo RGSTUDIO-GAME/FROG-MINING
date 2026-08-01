@@ -117,7 +117,7 @@ export class LeaderboardScreen {
     } else {
       listEl.innerHTML = entries.map((entry) => {
         const rankIcon = entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : '#' + entry.rank;
-        const avatarHtml = /^https?:\/\//i.test(entry.avatar || '')
+        const avatarHtml = /^(\/|https?:\/\/)/i.test(entry.avatar || '')
           ? `<img class="board-avatar-img" src="${entry.avatar}" alt="" loading="lazy" onerror="this.remove()">`
           : (entry.avatar || '🐸');
         return `

@@ -25,6 +25,24 @@
   border: 3px solid rgba(255, 255, 255, 0.2);
 }
 
+.profile-avatar-btn {
+  display: inline-block;
+  margin: 4px auto 12px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-accent-gold, #f6b93b), var(--color-accent-gold-light, #ffd76e));
+  color: #4a2f00;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.profile-avatar-btn:active {
+  transform: scale(0.95);
+}
+
 .profile-name {
   font-family: var(--font-family-display);
   font-size: var(--font-size-xl);

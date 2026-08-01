@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -12,7 +12,7 @@ import leaderboardRoutes from './routes/leaderboard.js';
 import autominingRoutes from './routes/automining.js';
 import mailRoutes from './routes/mail.js';
 import diamondRoutes from './routes/diamond.js';
-import db from './db/database.js';
+import db, { DATA_DIR } from './db/database.js';
 import { initBackup, backupNow, getBackupStatus } from './services/backup.js';
 import { initScheduler } from './services/scheduler.js';
 
@@ -62,6 +62,15 @@ await fastify.register(leaderboardRoutes);
 await fastify.register(autominingRoutes);
 await fastify.register(mailRoutes);
 await fastify.register(diamondRoutes);
+
+// Serve uploaded profile photos (persistent storage)
+const UPLOADS_DIR = join(DATA_DIR, 'uploads');
+mkdirSync(UPLOADS_DIR, { recursive: true });
+await fastify.register(fastifyStatic, {
+  root: UPLOADS_DIR,
+  prefix: '/uploads/',
+  decorateReply: false,
+});
 
 // Serve built frontend (dist/) — makes the same deploy host the game + API
 const DIST_DIR = join(__dirname, '../dist');

@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import db, { hashPassword } from '../db/database.js';
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import db, { hashPassword, DATA_DIR } from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
 import { ensureWelcomeGift } from '../services/gifts.js';
 import { bindReferral, ensureRefCode } from '../services/referral.js';
@@ -232,6 +234,52 @@ export default async function authRoutes(fastify) {
     }
 
     return reply.send({ status: 'success', data: { player } });
+  });
+
+  // Upload profile photo (base64, small size — downscaled client-side)
+  fastify.post('/api/players/:playerId/avatar', async (request, reply) => {
+    const { playerId } = request.params;
+    const { data } = request.body || {};
+
+    const player = db.prepare('SELECT id FROM players WHERE id = ?').get(playerId);
+    if (!player) {
+      return reply.code(404).send({ status: 'error', message: 'Player not found' });
+    }
+    if (!data || typeof data !== 'string') {
+      return reply.code(400).send({ status: 'error', message: 'Foto tidak ditemukan' });
+    }
+
+    const match = data.match(/^data:image\/(png|jpeg|webp);base64,(.+)$/);
+    if (!match) {
+      return reply.code(400).send({ status: 'error', message: 'Format foto tidak didukung (PNG/JPG/WebP)' });
+    }
+
+    const mime = match[1];
+    const buffer = Buffer.from(match[2], 'base64');
+    if (buffer.length > 1.5 * 1024 * 1024) {
+      return reply.code(413).send({ status: 'error', message: 'Foto terlalu besar (maks 1,5 MB)' });
+    }
+
+    const valid =
+      (mime === 'png' && buffer[0] === 0x89 && buffer[1] === 0x50) ||
+      (mime === 'jpeg' && buffer[0] === 0xff && buffer[1] === 0xd8) ||
+      (mime === 'webp' && buffer.toString('ascii', 0, 4) === 'RIFF');
+    if (!valid) {
+      return reply.code(400).send({ status: 'error', message: 'File bukan gambar yang valid' });
+    }
+
+    const uploadsDir = join(DATA_DIR, 'uploads');
+    mkdirSync(uploadsDir, { recursive: true });
+    const filename = playerId + '.' + mime;
+    writeFileSync(join(uploadsDir, filename), buffer);
+
+    const avatar = '/uploads/' + filename;
+    db.prepare('UPDATE players SET avatar = ?, updated_at = ? WHERE id = ?')
+      .run(avatar, new Date().toISOString(), playerId);
+
+    markDataChanged();
+
+    return reply.send({ status: 'success', message: 'Foto profil diperbarui', data: { avatar } });
   });
 
   // Referral info (invite link)

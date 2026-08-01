@@ -12,6 +12,8 @@ const db = new Database(join(dbDir, 'frog-mining.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+export const DATA_DIR = dbDir;
+
 export function hashPassword(password) {
   return createHash('sha256').update('frog_salt_' + password).digest('hex');
 }

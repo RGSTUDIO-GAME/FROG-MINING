@@ -216,6 +216,19 @@ export class Game {
 
     // Mail
     this.events.on('mail:new', () => this.header.updateMailCount(this.mailManager.getUnreadCount()));
+
+    // Profile avatar
+    this.events.on('profile:avatarChanged', (avatar) => {
+      this.accountManager.updateAccount({ avatar });
+      this._account = this.accountManager.getAccount();
+      const profile = this.screenManager?.getScreen('profile');
+      if (profile) this._updateProfile(profile);
+      showPopup('Foto profil diperbarui!', 'success');
+    });
+    this.events.on('profile:avatarError', (message) => {
+      showPopup(message || 'Gagal mengubah foto', 'error');
+    });
+
     this.events.on('mail:claimRequest', async ({ mailId }) => {
       const result = await this.mailManager.claimReward(mailId);
       if (result.success) {
