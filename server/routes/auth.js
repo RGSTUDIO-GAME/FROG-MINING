@@ -24,6 +24,7 @@ function safePlayer(player, now) {
     created_at: player.created_at,
     last_login: now || player.last_login,
     status: player.status,
+    telegram_id: player.telegram_id || null,
   };
 }
 

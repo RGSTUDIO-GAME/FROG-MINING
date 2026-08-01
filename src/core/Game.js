@@ -293,6 +293,7 @@ export class Game {
   _updateProfile(screen) {
     if (!this._account) return;
     screen.update({
+      loginMode: this._account.offline ? 'Mode: Perangkat (offline)' : (this._account.telegramId ? 'Mode: Telegram (nama: @' + (this._account.username || '') + ')' : 'Mode: Perangkat'),
       username: this._account.username,
       score: this.scoreManager.getScore(),
       taps: this.scoreManager.getTotalTaps(),

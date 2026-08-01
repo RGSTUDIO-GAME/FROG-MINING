@@ -25,6 +25,7 @@ export class ProfileScreen {
         <div class="profile-name" id="profile-name">Guest</div>
         <div class="profile-id" id="profile-id"></div>
         <div class="profile-joined" id="profile-joined">Joined: --</div>
+        <div class="profile-joined" id="profile-login-mode"></div>
       </div>
 
       <div class="profile-stats">
@@ -71,8 +72,13 @@ export class ProfileScreen {
     const score = this.el.querySelector('#profile-score');
     const taps = this.el.querySelector('#profile-taps');
     const diamond = this.el.querySelector('#profile-diamond');
+    const loginMode = this.el.querySelector('#profile-login-mode');
 
     if (name) name.textContent = data.username || 'Guest';
+    if (loginMode) {
+      loginMode.textContent = data.loginMode || '';
+      loginMode.style.color = data.loginMode && data.loginMode.includes('Telegram') ? '#74C69D' : '#F4845F';
+    }
     if (id) id.textContent = data.playerId ? '#' + data.playerId.substring(0, 8) : '';
     if (joined) {
       const date = data.joinDate ? new Date(data.joinDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--';

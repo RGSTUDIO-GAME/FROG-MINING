@@ -217,6 +217,7 @@ export class AccountManager {
       createdAt: p.created_at || new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
       accountStatus: p.status || 'active',
+      telegramId: p.telegram_id || null,
       server: true,
     };
   }
