@@ -69,9 +69,9 @@ export class SettingsScreen {
               <span class="settings-referral-title">Undang Teman</span>
             </div>
             <div class="settings-referral-desc">
-              Ajak teman main! Kamu dapat <b>500 Diamond</b> untuk setiap teman baru,
-              plus <b>5%</b> dari Diamond temanmu (hadiah Leaderboard &amp; Top Up) —
-              tanpa mengurangi Diamond teman. Teman yang diundang juga dapat <b>200 Diamond</b> via Mail.
+              🎁 500 Diamond untuk setiap teman yang bergabung.<br>
+              💎 Bonus 5% dari Diamond temanmu.<br>
+              🎉 Temanmu mendapat 200 Diamond sebagai bonus.
             </div>
             <div class="settings-referral-link" id="referral-link">Memuat link...</div>
             <div class="settings-referral-actions">
