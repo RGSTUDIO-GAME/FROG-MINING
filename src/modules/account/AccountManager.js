@@ -241,7 +241,27 @@ export class AccountManager {
       const tg = window.Telegram?.WebApp?.initDataUnsafe;
       if (tg && tg.user && tg.user.id) return tg.user;
     } catch { /* not in Telegram */ }
+
+    // Fallback: parse user dari initData / parameter tgWebAppData di URL.
+    try {
+      const raw = window.Telegram?.WebApp?.initData || this._getUrlParam('tgWebAppData') || '';
+      if (raw) {
+        const params = new URLSearchParams(raw);
+        const userRaw = params.get('user');
+        if (userRaw) {
+          const user = JSON.parse(decodeURIComponent(userRaw));
+          if (user && user.id) return user;
+        }
+      }
+    } catch { /* ignore */ }
     return null;
+  }
+
+  _getUrlParam(name) {
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name) || '';
+    } catch { return ''; }
   }
 
   _activateSession(account) {
