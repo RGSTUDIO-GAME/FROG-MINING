@@ -31,7 +31,7 @@ export function ensureWelcomeGift(playerId) {
     randomUUID(),
     playerId,
     WELCOME_TITLE,
-    'Selamat datang di Frog Mining! Nikmati 1.000.000 Diamond sebagai hadiah sambutan. Gunakan untuk Auto Mining! 🐸⛏️',
+    'Selamat datang di Frog Mining! Nikmati 5.000 Diamond sebagai hadiah sambutan. Gunakan untuk Auto Mining! 🐸⛏️',
     WELCOME_CATEGORY,
     'diamond',
     5000,

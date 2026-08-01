@@ -160,4 +160,15 @@ try { db.exec("ALTER TABLE players ADD COLUMN referrer_id TEXT"); } catch {}
 try { db.exec("ALTER TABLE players ADD COLUMN ref_code TEXT"); } catch {}
 try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_players_ref_code ON players(ref_code)"); } catch {}
 
+// Fix old welcome gift text (reward is 5.000, not 1.000.000)
+try {
+  db.prepare(
+    "UPDATE mails SET content = ? WHERE title = ? AND content LIKE ?"
+  ).run(
+    'Selamat datang di Frog Mining! Nikmati 5.000 Diamond sebagai hadiah sambutan. Gunakan untuk Auto Mining! 🐸⛏️',
+    '🎁 Welcome Gift',
+    '%1.000.000%'
+  );
+} catch {}
+
 export default db;
