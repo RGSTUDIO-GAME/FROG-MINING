@@ -2,6 +2,7 @@ import { Logger } from '@utils/logger.js';
 import { Config } from '@core/Config.js';
 
 const MUSIC_SRC = '/assets/sounds/bg_morning.mp3';
+const TAP_SOUND_SRC = '/assets/sounds/fx_tap_frog.mp3';
 const MUSIC_GAP_MS = 5000;
 const MUSIC_FADE_MS = 3000;
 
@@ -19,6 +20,7 @@ export class SoundManager {
     this._sounds = {};
     this._music = null;
     this._musicTimer = null;
+    this._tapAudio = null;
     this._loadPrefs();
   }
 
@@ -150,8 +152,29 @@ export class SoundManager {
    * Play a tap sound effect.
    */
   playTap() {
-    if (!this._enabled || !this._audioCtx) return;
+    if (!this._enabled) return;
+    if (this._playTapFile()) return;
+    if (!this._audioCtx) return;
     this._playFrog();
+  }
+
+  _playTapFile() {
+    if (!this._tapAudio) {
+      try {
+        this._tapAudio = new Audio(TAP_SOUND_SRC);
+        this._tapAudio.preload = 'auto';
+      } catch (e) {
+        return false;
+      }
+    }
+    try {
+      this._tapAudio.currentTime = 0;
+      const p = this._tapAudio.play();
+      if (p && p.catch) p.catch(() => {});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
