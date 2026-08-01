@@ -72,6 +72,42 @@
   overflow: hidden;
 }
 
+.mining-active-card {
+  text-align: center;
+  padding: var(--space-lg);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+}
+
+.mining-active-icon {
+  font-size: 42px;
+  margin-bottom: var(--space-sm);
+}
+
+.mining-active-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.mining-active-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: var(--space-md);
+}
+
+.mining-active-timer {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-accent-gold-light);
+  font-variant-numeric: tabular-nums;
+}
+
 .shop-item:active {
   transform: scale(0.98);
 }

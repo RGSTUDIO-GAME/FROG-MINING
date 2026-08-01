@@ -196,9 +196,11 @@ export class Game {
       showPopup(pkg.name + ' activated! ⛏️', 'success');
       this.soundManager.playReward();
       home.showMiningActive(this.autoMiningManager.getStatus());
+      if (shop) this._refreshShopMining(shop);
     });
     this.events.on('autoMining:tick', ({ remainingMs, remainingFormatted, score }) => {
       home.updateMiningTick(remainingMs, remainingFormatted);
+      shop.updateMiningTick(remainingFormatted);
       home.updateMiningTotalScore(score);
       this.leaderboardManager.updateScore(score);
     });
@@ -207,8 +209,12 @@ export class Game {
       this.soundManager.playClick();
       home.hideMiningActive();
       this._refreshAutoMiningUI(home);
+      if (shop) this._refreshShopMining(shop);
     });
-    this.events.on('autoMining:resume', (status) => home.showMiningActive(status));
+    this.events.on('autoMining:resume', (status) => {
+      home.showMiningActive(status);
+      if (shop) this._refreshShopMining(shop);
+    });
 
     // Leaderboard
     this.events.on('leaderboard:requestUpdate', () => this._refreshLeaderboard(leaderboard));
@@ -302,6 +308,11 @@ export class Game {
   }
 
   _refreshShopMining(shop) {
+    const status = this.autoMiningManager.getStatus();
+    if (status.active) {
+      shop.showMiningActive(status);
+      return;
+    }
     const packages = this.autoMiningManager.getPackages();
     shop.setMiningData(packages,
       (price) => this.gameDataManager.canAfford(price),
@@ -339,7 +350,7 @@ export class Game {
 
     const inTelegram = !!window.Telegram?.WebApp;
     const base = inTelegram
-      ? 'https://t.me/' + Config.APP.TELEGRAM_BOT + '?startapp=ref_'
+      ? 'https://t.me/' + Config.APP.TELEGRAM_BOT + '/' + Config.APP.TELEGRAM_APP + '?startapp=ref_'
       : window.location.origin + '/?ref=';
     this.events.emit('settings:referral', {
       inviteUrl: base + code,

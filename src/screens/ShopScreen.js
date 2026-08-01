@@ -145,6 +145,25 @@ export class ShopScreen {
     this._updateMiningTab();
   }
 
+  showMiningActive(status) {
+    const container = this.el?.querySelector('#tab-mining');
+    if (!container) return;
+    const pkg = status.package || {};
+    container.innerHTML = `
+      <div class="mining-active-card">
+        <div class="mining-active-icon">${pkg.icon || '⛏️'}</div>
+        <div class="mining-active-title">${pkg.name || 'Auto Mining'} Aktif</div>
+        <div class="mining-active-sub">Auto Mining sedang berjalan. Paket baru bisa dibeli setelah selesai.</div>
+        <div class="mining-active-timer" id="shop-mining-timer">${status.remainingFormatted || '--:--'}</div>
+      </div>
+    `;
+  }
+
+  updateMiningTick(remainingFormatted) {
+    const timer = this.el?.querySelector('#shop-mining-timer');
+    if (timer && remainingFormatted) timer.textContent = remainingFormatted;
+  }
+
   hide() { this.el?.remove(); }
   destroy() { this.el?.remove(); }
 }
