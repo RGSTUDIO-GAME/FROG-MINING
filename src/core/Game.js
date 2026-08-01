@@ -235,8 +235,12 @@ export class Game {
       const account = this._account || this.accountManager.getAccount();
       if (!account) return;
       const send = (code) => {
+        const inTelegram = !!window.Telegram?.WebApp;
+        const base = inTelegram
+          ? 'https://t.me/' + Config.APP.TELEGRAM_BOT + '?startapp=ref_'
+          : window.location.origin + '/?ref=';
         this.events.emit('settings:referral', {
-          inviteUrl: window.location.origin + '/?ref=' + code,
+          inviteUrl: base + code,
           code,
         });
       };

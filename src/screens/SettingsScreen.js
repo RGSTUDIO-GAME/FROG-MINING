@@ -182,6 +182,15 @@ export class SettingsScreen {
 
   _shareInvite() {
     if (!this._inviteUrl) return;
+    // Di Telegram — buka share picker Telegram langsung
+    try {
+      if (window.Telegram?.WebApp?.openTelegramLink) {
+        const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(this._inviteUrl) +
+          '&text=' + encodeURIComponent('Main yuk di Frog Mining! 🐸⛏️ Kamu dapat 200 Diamond, aku dapat 500 Diamond + komisi 5%.');
+        window.Telegram.WebApp.openTelegramLink(shareUrl);
+        return;
+      }
+    } catch (e) { /* fallback di bawah */ }
     if (navigator.share) {
       navigator.share({
         title: 'Frog Mining',

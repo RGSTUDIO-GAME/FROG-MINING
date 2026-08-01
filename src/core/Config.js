@@ -8,6 +8,7 @@ export const Config = {
     VERSION: import.meta.env.VITE_APP_VERSION || '0.1.0',
     ENV: import.meta.env.VITE_ENV || 'development',
     DEBUG: import.meta.env.VITE_DEBUG === 'true',
+    TELEGRAM_BOT: 'frogmininggame_bot',
   },
 
   API: {
