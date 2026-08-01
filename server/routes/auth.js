@@ -14,6 +14,13 @@ function makeUniqueUsername(base, maxLen = 32) {
   return candidate;
 }
 
+function cleanName(name, tgId) {
+  const clean = String(name || '').trim().replace(/\s+/g, ' ').slice(0, 32);
+  if (clean && !/^\d+$/.test(clean)) return clean;
+  const id = String(tgId || '');
+  return id ? 'Frog#' + id.slice(-4) : 'Pemain';
+}
+
 function safePlayer(player, now) {
   return {
     id: player.id,
@@ -42,7 +49,7 @@ export default async function authRoutes(fastify) {
 
     if (!player) {
       const id = uuidv4();
-      const finalName = makeUniqueUsername(username || firstName || ('Pemain' + tgId));
+      const finalName = makeUniqueUsername(cleanName(username || firstName, tgId));
       db.prepare(
         'INSERT INTO players (id, username, telegram_id, avatar, device_id, created_at, updated_at, last_login, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).run(id, finalName, tgId, avatar || '🐸', deviceId || null, now, now, now, 'active');
@@ -50,7 +57,7 @@ export default async function authRoutes(fastify) {
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       markDataChanged();
     } else {
-      const updatedName = username || firstName || player.username;
+      const updatedName = cleanName(username || firstName, tgId);
       db.prepare(
         'UPDATE players SET username = ?, avatar = ?, device_id = COALESCE(?, device_id), last_login = ?, updated_at = ? WHERE id = ?'
       ).run(updatedName, avatar || player.avatar, deviceId || null, now, now, player.id);

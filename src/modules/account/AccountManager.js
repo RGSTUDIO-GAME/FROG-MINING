@@ -41,7 +41,7 @@ export class AccountManager {
     const tg = this._getTelegramUser();
     const account = {
       id: deviceId || generateUUID(),
-      username: tg ? (tg.username || ((tg.first_name || '') + (tg.last_name ? ' ' + tg.last_name : '')) || 'Pemain') : 'Pemain',
+      username: this._friendlyTelegramName(tg),
       email: null,
       avatar: (tg && tg.photo_url) || '🐸',
       totalScore: 0,
@@ -68,7 +68,7 @@ export class AccountManager {
 
     let res = null;
     if (tg) {
-      const name = tg.username || ((tg.first_name || '') + (tg.last_name ? ' ' + tg.last_name : '')) || ('Pemain' + tg.id);
+      const name = this._friendlyTelegramName(tg);
       res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
     } else {
       res = await Api.deviceLogin(deviceId, null);
@@ -99,7 +99,7 @@ export class AccountManager {
       let res = null;
 
       if (tg) {
-        const name = tg.username || ((tg.first_name || '') + (tg.last_name ? ' ' + tg.last_name : '')) || ('Pemain' + tg.id);
+        const name = this._friendlyTelegramName(tg);
         res = await Api.telegramLogin(tg.id, name, tg.photo_url || '🐸', deviceId, tg.first_name);
       } else {
         res = await Api.deviceLogin(deviceId, null);
@@ -208,7 +208,7 @@ export class AccountManager {
   _fromServerPlayer(p, email, password) {
     return {
       id: p.id,
-      username: p.username,
+      username: this._cleanServerName(p.username, p.id),
       email,
       avatar: p.avatar || '🐸',
       password,
@@ -220,6 +220,23 @@ export class AccountManager {
       telegramId: p.telegram_id || null,
       server: true,
     };
+  }
+
+  _friendlyTelegramName(tg) {
+    if (!tg) return 'Pemain';
+    const username = String(tg.username || '').trim();
+    if (username && !/^\d+$/.test(username)) return username;
+    const full = [tg.first_name, tg.last_name].filter(Boolean).join(' ').trim();
+    if (full && !/^\d+$/.test(full)) return full;
+    const id = String(tg.id || '');
+    return id ? 'Frog#' + id.slice(-4) : 'Pemain';
+  }
+
+  _cleanServerName(name, playerId) {
+    const n = String(name || '').trim();
+    if (n && !/^\d+$/.test(n)) return n;
+    const id = String(playerId || '').replace(/[^a-z0-9]/gi, '').slice(-4);
+    return id ? 'Frog#' + id : 'Pemain';
   }
 
   _getDeviceId() {

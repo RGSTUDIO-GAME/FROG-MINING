@@ -111,7 +111,7 @@ export class LeaderboardManager {
 
       const serverEntries = result.data.entries.map((e) => ({
         playerId: e.playerId,
-        username: e.username,
+        username: this._cleanName(e.username, e.playerId),
         avatar: e.avatar || '🐸',
         score: e.score,
         firstScoreAt: e.firstScoreAt || null,
@@ -133,6 +133,13 @@ export class LeaderboardManager {
     this._save();
     this._refreshAll();
     this.events.emit('leaderboard:update');
+  }
+
+  _cleanName(name, playerId) {
+    const n = String(name || '').trim();
+    if (n && !/^\d+$/.test(n)) return n;
+    const id = String(playerId || '').replace(/[^a-z0-9]/gi, '').slice(-4);
+    return id ? 'Frog#' + id : 'Frog';
   }
 
   _scheduleFetch(playerId) {

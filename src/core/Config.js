@@ -90,5 +90,5 @@ export const Config = {
     ],
   },
 
-  STORAGE_KEY: 'frog-mining-v2',
+  STORAGE_KEY: 'frog-mining-v3',
 };
