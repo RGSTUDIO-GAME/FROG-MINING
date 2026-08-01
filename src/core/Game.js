@@ -159,6 +159,10 @@ export class Game {
     this.events.on('nav:change', (path) => this.router.navigate(path));
     this.events.on('route:change', ({ to }) => {
       this.bottomNav.setActive(to.path);
+      if (to.name === 'home') {
+        home.updateScore(this.scoreManager.getScore());
+        this._refreshAutoMiningUI(home);
+      }
       if (to.name === 'profile') this._updateProfile(profile);
       if (to.name === 'shop') { shop.updateDiamonds(this.gameDataManager.getDiamonds()); this._refreshShopMining(shop); }
       if (to.name === 'leaderboard') this._refreshLeaderboard(leaderboard);
@@ -278,7 +282,9 @@ export class Game {
 
   async _refreshAutoMiningUI(home) {
     const status = this.autoMiningManager.getStatus();
-    if (!status.active) {
+    if (status.active) {
+      home.showMiningActive(status);
+    } else {
       const packages = this.autoMiningManager.getPackages();
       home.showMiningPackages(packages,
         (key) => this.gameDataManager.canAfford(packages.find((p) => p.key === key)?.price || Infinity),
