@@ -290,6 +290,8 @@ export class AccountManager {
       const url = new URL(window.location.href);
       const ref = url.searchParams.get('ref');
       if (ref) return ref;
+      const startapp = url.searchParams.get('startapp');
+      if (startapp && startapp.startsWith('ref_')) return startapp.slice(4);
     } catch { /* ignore */ }
     try {
       const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;

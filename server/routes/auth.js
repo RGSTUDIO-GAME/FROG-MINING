@@ -66,6 +66,8 @@ export default async function authRoutes(fastify) {
         'UPDATE players SET username = ?, avatar = ?, device_id = COALESCE(?, device_id), last_login = ?, updated_at = ? WHERE id = ?'
       ).run(updatedName, avatar || player.avatar, deviceId || null, now, now, player.id);
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(player.id);
+      // Pemain lama yang belum punya pengundang tetap bisa terhubung (sekali saja)
+      bindReferral(player.id, ref);
     }
 
     ensureWelcomeGift(player.id);
@@ -95,6 +97,8 @@ export default async function authRoutes(fastify) {
       markDataChanged();
     } else {
       db.prepare('UPDATE players SET last_login = ?, updated_at = ? WHERE id = ?').run(now, now, player.id);
+      // Pemain lama yang belum punya pengundang tetap bisa terhubung (sekali saja)
+      bindReferral(player.id, ref);
     }
 
     ensureWelcomeGift(player.id);
