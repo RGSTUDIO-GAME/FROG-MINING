@@ -1,7 +1,7 @@
 import { Config } from '@core/Config.js';
 import { Logger } from '@utils/logger.js';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
 const REQUEST_TIMEOUT = 15000;
 
 /**
