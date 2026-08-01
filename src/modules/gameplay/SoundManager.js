@@ -12,7 +12,7 @@ export class SoundManager {
   constructor(eventBus) {
     this.events = eventBus;
     this._enabled = true;
-    this._musicEnabled = false;
+    this._musicEnabled = true;
     this._musicVolume = 0.7;
     this._audioCtx = null;
     this._sounds = {};
