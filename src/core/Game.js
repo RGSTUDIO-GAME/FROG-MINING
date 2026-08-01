@@ -223,6 +223,11 @@ export class Game {
     // Settings
 
     this.events.on('settings:soundToggle', (enabled) => this.soundManager.setEnabled(enabled));
+    this.events.on('settings:musicToggle', (enabled) => this.soundManager.setMusicEnabled(enabled));
+    this.events.on('settings:musicVolume', (volume) => this.soundManager.setMusicVolume(volume));
+    this.events.on('settings:stateRequest', () => {
+      this.events.emit('settings:state', this.soundManager.getState());
+    });
 
     home.updateScore(this.scoreManager.getScore());
     this._updateProfile(profile);

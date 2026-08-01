@@ -1,4 +1,8 @@
 import { Logger } from '@utils/logger.js';
+import { Config } from '@core/Config.js';
+
+const MUSIC_SRC = '/assets/sounds/bg_morning.mp3';
+const MUSIC_GAP_MS = 5000;
 
 /**
  * SoundManager — Handles all game audio.
@@ -9,8 +13,12 @@ export class SoundManager {
     this.events = eventBus;
     this._enabled = true;
     this._musicEnabled = false;
+    this._musicVolume = 0.7;
     this._audioCtx = null;
     this._sounds = {};
+    this._music = null;
+    this._musicTimer = null;
+    this._loadPrefs();
   }
 
   init() {
@@ -29,11 +37,99 @@ export class SoundManager {
           Logger.warn('SoundManager', 'Web Audio not supported');
         }
       }
+      this._startMusic();
       document.removeEventListener('touchstart', init);
       document.removeEventListener('click', init);
     };
     document.addEventListener('touchstart', init, { once: true });
     document.addEventListener('click', init, { once: true });
+  }
+
+  // ── Music (background loop with 5s gap) ──
+
+  _startMusic() {
+    if (!this._musicEnabled) return;
+    if (this._musicTimer) {
+      clearTimeout(this._musicTimer);
+      this._musicTimer = null;
+    }
+    if (!this._music) {
+      try {
+        this._music = new Audio(MUSIC_SRC);
+        this._music.preload = 'auto';
+        this._music.volume = this._musicVolume;
+        this._music.addEventListener('ended', () => this._scheduleMusicReplay());
+      } catch (e) {
+        Logger.warn('SoundManager', 'Music element gagal dibuat');
+        return;
+      }
+    }
+    this._music.currentTime = 0;
+    const p = this._music.play();
+    if (p && p.catch) p.catch(() => { /* autoplay diblokir browser, coba lagi saat interaksi */ });
+  }
+
+  _scheduleMusicReplay() {
+    if (!this._musicEnabled) return;
+    if (this._musicTimer) clearTimeout(this._musicTimer);
+    this._musicTimer = setTimeout(() => {
+      this._musicTimer = null;
+      this._startMusic();
+    }, MUSIC_GAP_MS);
+  }
+
+  setMusicEnabled(enabled) {
+    this._musicEnabled = !!enabled;
+    this._savePrefs();
+    if (!this._musicEnabled) {
+      if (this._musicTimer) {
+        clearTimeout(this._musicTimer);
+        this._musicTimer = null;
+      }
+      try { this._music?.pause(); } catch (e) { /* ignore */ }
+    } else {
+      this._startMusic();
+    }
+    Logger.debug('SoundManager', 'Music ' + (this._musicEnabled ? 'enabled' : 'disabled'));
+  }
+
+  setMusicVolume(volume) {
+    this._musicVolume = Math.min(1, Math.max(0, Number(volume) || 0));
+    if (this._music) this._music.volume = this._musicVolume;
+    this._savePrefs();
+  }
+
+  getMusicVolume() {
+    return this._musicVolume;
+  }
+
+  getState() {
+    return {
+      sound: this._enabled,
+      music: this._musicEnabled,
+      volume: this._musicVolume,
+    };
+  }
+
+  _loadPrefs() {
+    try {
+      const raw = localStorage.getItem(Config.STORAGE_KEY + ':audio');
+      if (!raw) return;
+      const p = JSON.parse(raw);
+      if (typeof p.sound === 'boolean') this._enabled = p.sound;
+      if (typeof p.music === 'boolean') this._musicEnabled = p.music;
+      if (typeof p.volume === 'number') this._musicVolume = Math.min(1, Math.max(0, p.volume));
+    } catch (e) { /* ignore */ }
+  }
+
+  _savePrefs() {
+    try {
+      localStorage.setItem(Config.STORAGE_KEY + ':audio', JSON.stringify({
+        sound: this._enabled,
+        music: this._musicEnabled,
+        volume: this._musicVolume,
+      }));
+    } catch (e) { /* ignore */ }
   }
 
   /**
@@ -149,6 +245,7 @@ export class SoundManager {
 
   setEnabled(enabled) {
     this._enabled = enabled;
+    this._savePrefs();
     Logger.debug('SoundManager', 'Sound ' + (enabled ? 'enabled' : 'disabled'));
   }
 
@@ -156,15 +253,16 @@ export class SoundManager {
     return this._enabled;
   }
 
-  setMusicEnabled(enabled) {
-    this._musicEnabled = enabled;
-  }
-
   isMusicEnabled() {
     return this._musicEnabled;
   }
 
   destroy() {
+    if (this._musicTimer) {
+      clearTimeout(this._musicTimer);
+      this._musicTimer = null;
+    }
+    try { this._music?.pause(); } catch (e) { /* ignore */ }
     this._audioCtx?.close();
   }
 }
