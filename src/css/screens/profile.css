@@ -9,6 +9,17 @@
 .profile-avatar {
   font-size: 80px;
   margin-bottom: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-avatar-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.2);
 }
 
 .profile-name {

@@ -117,10 +117,13 @@ export class LeaderboardScreen {
     } else {
       listEl.innerHTML = entries.map((entry) => {
         const rankIcon = entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : '#' + entry.rank;
+        const avatarHtml = /^https?:\/\//i.test(entry.avatar || '')
+          ? `<img class="board-avatar-img" src="${entry.avatar}" alt="" loading="lazy" onerror="this.remove()">`
+          : (entry.avatar || '🐸');
         return `
           <div class="board-item${entry.rank <= 3 ? ' rank-' + entry.rank : ''}${entry.isPlayer ? ' is-player' : ''}">
             <span class="board-rank">${rankIcon}</span>
-            <span class="board-avatar">${entry.avatar || '🐸'}</span>
+            <span class="board-avatar">${avatarHtml}</span>
             <span class="board-name">${entry.username}</span>
             <span class="board-score">${entry.score.toLocaleString()}</span>
           </div>

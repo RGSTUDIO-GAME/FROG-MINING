@@ -66,6 +66,7 @@ export class ProfileScreen {
   update(data) {
     if (!this.el) return;
 
+    const avatar = this.el.querySelector('#profile-avatar');
     const name = this.el.querySelector('#profile-name');
     const id = this.el.querySelector('#profile-id');
     const joined = this.el.querySelector('#profile-joined');
@@ -74,6 +75,13 @@ export class ProfileScreen {
     const diamond = this.el.querySelector('#profile-diamond');
     const loginMode = this.el.querySelector('#profile-login-mode');
 
+    if (avatar) {
+      if (/^https?:\/\//i.test(data.avatar || '')) {
+        avatar.innerHTML = `<img class="profile-avatar-img" src="${data.avatar}" alt="" onerror="this.remove()">`;
+      } else {
+        avatar.textContent = data.avatar || '🐸';
+      }
+    }
     if (name) name.textContent = data.username || 'Guest';
     if (loginMode) {
       loginMode.textContent = data.loginMode || '';
