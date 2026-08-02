@@ -45,6 +45,16 @@
   text-align: right;
 }
 
+.runner-score-value.pop {
+  animation: runnerScorePop 0.3s ease;
+}
+
+@keyframes runnerScorePop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
 .runner-hud-btns { display: flex; gap: 8px; }
 
 .runner-hud-btn {
@@ -135,6 +145,18 @@
   width: min(320px, 86%);
   text-align: center;
   box-shadow: var(--shadow-lg);
+  animation: runnerPanelIn 0.28s ease-out both;
+}
+
+@keyframes runnerPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .runner-gameover-title {
