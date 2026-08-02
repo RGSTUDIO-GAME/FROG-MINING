@@ -24,6 +24,7 @@ import { LeaderboardScreen } from '@screens/LeaderboardScreen.js';
 import { MailScreen } from '@screens/MailScreen.js';
 import { ProfileScreen } from '@screens/ProfileScreen.js';
 import { SettingsScreen } from '@screens/SettingsScreen.js';
+import { RunnerScreen } from '@screens/RunnerScreen.js';
 
 /**
  * Game — Core game controller with all systems.
@@ -156,7 +157,13 @@ export class Game {
     this.screenManager.register('profile', profile);
     this.screenManager.register('settings', settings);
 
+    const runner = new RunnerScreen(this.events);
+    this.screenManager.register('runner', runner);
+
     this.router.init(this.config.ROUTES);
+
+    // Route mini-game (tersembunyi — tidak muncul di bottom nav)
+    this.router.routes.set('/runner', { path: '/runner', name: 'runner' });
 
     this.events.on('nav:change', (path) => this.router.navigate(path));
     this.events.on('route:change', ({ to }) => {
@@ -172,6 +179,35 @@ export class Game {
       if (to.name === 'shop') { shop.updateDiamonds(this.gameDataManager.getDiamonds()); this._refreshShopMining(shop); }
       if (to.name === 'leaderboard') this._refreshLeaderboard(leaderboard);
       if (to.name === 'mail') this._refreshMail(mail);
+    });
+
+    // Mini-game Frog Runner
+    this.events.on('game:runnerPlay', () => {
+      const hash = window.location.hash.slice(1) || '/';
+      if (hash !== '/runner') {
+        this.router.navigate('/runner');
+      } else {
+        this.screenManager.showScreen('runner');
+      }
+    });
+    this.events.on('runner:quit', () => {
+      const hash = window.location.hash.slice(1) || '/';
+      if (hash !== '/') {
+        this.router.navigate('/');
+      } else {
+        this.screenManager.showScreen('home');
+        this.bottomNav.setActive('/');
+      }
+    });
+    this.events.on('runner:gameOver', ({ score }) => {
+      const amount = Math.max(1, Math.floor(score || 0));
+      this.gameDataManager.addScoreFromAutoMining(amount);
+      this.leaderboardManager.updateScore(this.scoreManager.getScore());
+      const account = this._account || this.accountManager.getAccount();
+      if (!account?.id) return;
+      Api.submitRunnerScore(account.id, amount).then((res) => {
+        if (!res.success) Logger.warn('Game', 'Runner score sync gagal', res.error);
+      });
     });
 
     // Gameplay

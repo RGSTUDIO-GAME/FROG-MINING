@@ -1,0 +1,223 @@
+/* ═══ Frog Runner Mini-Game ═══ */
+
+.runner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1b4332 0%, #2d6a4f 62%, #16382a 100%);
+  padding: var(--safe-area-top) 0 calc(var(--safe-area-bottom) + 6px);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* ── Top bar ── */
+
+.runner-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+
+.runner-score-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 6px 16px 6px 10px;
+}
+
+.runner-score-icon { font-size: 16px; }
+
+.runner-score-value {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  color: var(--color-accent-gold-light);
+  text-shadow: 0 0 12px rgba(240, 192, 64, 0.35);
+  min-width: 44px;
+  text-align: right;
+}
+
+.runner-hud-btns { display: flex; gap: 8px; }
+
+.runner-hud-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.32);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.runner-hud-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Stage (canvas) ── */
+
+.runner-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.runner-stage canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ── Chip status ── */
+
+.runner-chip {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
+  text-align: center;
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+  animation: runnerChipPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes runnerChipPulse {
+  0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+.runner-overlay.is-ready .runner-chip-ready,
+.runner-overlay.is-paused .runner-chip-paused { display: block; }
+
+/* ── Game over ── */
+
+.runner-gameover {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 25, 18, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+}
+
+.runner-overlay.is-over .runner-gameover { display: flex; }
+
+.runner-gameover-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.36));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  width: min(320px, 86%);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.runner-gameover-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--color-accent-gold-light);
+  margin-bottom: 8px;
+}
+
+.runner-gameover-score {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-display);
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(240, 192, 64, 0.4);
+}
+
+.runner-gameover-best {
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+  font-size: var(--font-size-sm);
+}
+
+.runner-gameover-new {
+  color: var(--color-accent-gold-light);
+  font-weight: 800;
+  font-size: var(--font-size-base);
+  margin-top: 6px;
+  animation: runnerChipPulse 1.2s ease-in-out infinite;
+}
+
+.runner-gameover-new.hidden { display: none; }
+
+.runner-gameover-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.runner-gameover-actions .btn { flex: 1; }
+
+/* ── Kontrol bawah ── */
+
+.runner-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 14px 6px;
+  flex-shrink: 0;
+}
+
+.runner-controls-hint {
+  margin-right: auto;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--font-size-xs);
+}
+
+.runner-ctrl {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+.runner-ctrl:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-accent-gold-light);
+}
+
+.runner-overlay.is-over .runner-controls {
+  opacity: 0.35;
+  pointer-events: none;
+}

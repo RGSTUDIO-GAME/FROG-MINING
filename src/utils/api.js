@@ -65,6 +65,10 @@ export const Api = {
     return this._request('POST', '/api/score/tap', { playerId, amount });
   },
 
+  submitRunnerScore(playerId, amount = 1) {
+    return this._request('POST', '/api/score/runner', { playerId, amount });
+  },
+
   getScore(playerId) {
     return this._request('GET', '/api/score/' + playerId);
   },

@@ -332,3 +332,72 @@
 .mining-progress { height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); overflow: hidden; margin-bottom: var(--space-sm); }
 .mining-fill { height: 100%; background: linear-gradient(90deg, var(--color-accent-success), var(--color-accent-crystal)); border-radius: var(--radius-full); transition: width 1s linear; }
 .mining-status-score { font-size: var(--font-size-sm); color: rgba(255, 255, 255, 0.8); text-align: center; }
+
+/* ── Play Game Button ── */
+
+.runner-play-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(240, 192, 64, 0.45);
+  background: linear-gradient(135deg, rgba(212, 160, 23, 0.28), rgba(240, 192, 64, 0.12));
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  text-align: left;
+}
+
+.runner-play-btn:active {
+  transform: scale(0.98);
+  border-color: var(--color-accent-gold-light);
+  box-shadow: var(--shadow-glow-gold);
+}
+
+.runner-play-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 10px rgba(240, 192, 64, 0.5));
+  animation: runnerPlayBob 1.6s ease-in-out infinite;
+}
+
+@keyframes runnerPlayBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.runner-play-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.runner-play-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  color: var(--color-accent-gold-light);
+  letter-spacing: 1px;
+  text-shadow: 0 0 14px rgba(240, 192, 64, 0.35);
+}
+
+.runner-play-sub {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.runner-play-arrow {
+  font-size: 18px;
+  color: var(--color-accent-gold-light);
+  flex-shrink: 0;
+  animation: runnerPlayArrow 1.2s ease-in-out infinite;
+}
+
+@keyframes runnerPlayArrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}

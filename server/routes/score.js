@@ -26,6 +26,29 @@ export default async function scoreRoutes(fastify) {
     });
   });
 
+  fastify.post('/api/score/runner', async (request, reply) => {
+    const { playerId, amount } = request.body || {};
+
+    if (!playerId) {
+      return reply.code(400).send({ status: 'error', message: 'Player ID required' });
+    }
+
+    const validAmount = Math.max(1, Math.floor(Number(amount) || 1));
+
+    const player = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);
+    if (!player) {
+      return reply.code(404).send({ status: 'error', message: 'Player not found' });
+    }
+
+    const newScore = applyScore(playerId, validAmount);
+    markDataChanged();
+
+    return reply.send({
+      status: 'success',
+      data: { score: newScore, added: validAmount, source: 'runner' },
+    });
+  });
+
   fastify.get('/api/score/:playerId', async (request, reply) => {
     const { playerId } = request.params;
     const player = db.prepare('SELECT total_score FROM players WHERE id = ?').get(playerId);

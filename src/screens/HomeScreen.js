@@ -54,6 +54,15 @@ export class HomeScreen {
           <div class="mining-activate-subtitle">Earn score while you sleep!</div>
           <div class="mining-packages" id="mining-packages"></div>
         </div>
+
+        <button class="runner-play-btn" id="runner-play" type="button">
+          <span class="runner-play-icon">🐸</span>
+          <span class="runner-play-text">
+            <span class="runner-play-title">PLAY GAME</span>
+            <span class="runner-play-sub">Frog Runner Mini-Game</span>
+          </span>
+          <span class="runner-play-arrow">▶</span>
+        </button>
       </div>
     `;
     container.appendChild(this.el);
@@ -67,6 +76,11 @@ export class HomeScreen {
       e.preventDefault();
       this._handleTap();
     }, { passive: false });
+
+    const playBtn = this.el.querySelector('#runner-play');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => this.events.emit('game:runnerPlay'));
+    }
 
     Logger.debug('HomeScreen', 'Shown');
   }
