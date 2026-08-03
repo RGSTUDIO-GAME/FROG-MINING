@@ -48,7 +48,6 @@ const GRAVITY = 2300;
 const JUMP_VELOCITY = -830;
 const BASE_SPEED = 280;
 const MAX_SPEED = 640;
-const COIN_SCORE = 50;
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
 // foot = frame-y dasar objek yang terlihat di dalam texture (dipakai agar menempel ke tanah).
@@ -112,7 +111,6 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this._lastScore = -1;
     this._jumpQueued = false;
     this._nextObstacleAt = 0;
-    this._nextCoinAt = 0;
     this._coyoteUntil = 0;
     this._lastGroundCount = 0;
     this._wasAirborne = false;
@@ -418,8 +416,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       g.fillEllipse(42, 78, 44, 10);
     });
 
-    // koin bonus
-    this._tex('coin', 40, 40, (g) => {
+    // titik cahaya kunang-kunang (ambience)
+    this._tex('glow', 40, 40, (g) => {
       g.fillStyle(0xc99a12, 1);
       g.fillCircle(20, 20, 18);
       g.fillStyle(0xf0c040, 1);
@@ -519,7 +517,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.width = w;
     this.height = h;
     this.groundY = h - Math.max(76, Math.round(h * 0.13));
-    this.frogScale = Phaser.Math.Clamp((h * 0.14) / FROG_BOUNDS.run.h, 0.42, 0.75);
+    this.frogScale = Phaser.Math.Clamp((h * 0.1) / FROG_BOUNDS.run.h, 0.34, 0.62);
     this.frogX = Math.max(64, Math.round(w * 0.24));
     // Anchor katak di kaki (bawah): telapak kaki ~12px di atas garis tanah,
     // tidak pernah di tengah layar dan tidak tenggelam ke dalam tanah.
@@ -572,10 +570,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
   _createObstacleGroups() {
     this.obstacles = this.physics.add.group({ allowGravity: false });
-    this.coins = this.physics.add.group({ allowGravity: false });
     this.fx = this.physics.add.group({ allowGravity: false });
     this.physics.add.overlap(this.frog, this.obstacles, () => this._gameOver());
-    this.physics.add.overlap(this.frog, this.coins, (_frog, coin) => this._collectCoin(coin));
   }
 
   _createAmbient() {
@@ -585,7 +581,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       const f = this.add.image(
         Phaser.Math.Between(20, this.width - 20),
         Phaser.Math.Between(Math.round(this.height * 0.25), Math.round(this.height * 0.7)),
-        'coin'
+        'glow'
       );
       f.setScale(0.12 + Math.random() * 0.06);
       f.setAlpha(0.35 + Math.random() * 0.3);
@@ -683,7 +679,6 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.state = 'running';
     this.speed = BASE_SPEED;
     this._nextObstacleAt = this.distance + 30;
-    this._nextCoinAt = this.distance + 130;
     this._wasAirborne = false;
     if (this._idleTween) {
       this._idleTween.stop();
@@ -724,9 +719,9 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     const isGround = pattern.some((t) => OBSTACLES[t].ground);
     this._lastGroundCount = isGround ? this._lastGroundCount + 1 : 0;
 
-    // Jarak antar objek dalam satu kelompok: berbasis WAKTU (0.55–0.75s),
+    // Jarak antar objek dalam satu kelompok: berbasis WAKTU (1.0–1.3s),
     // jadi selalu konsisten dan tidak pernah berdempetan berapa pun kecepatannya.
-    const withinTime = 0.6 + Math.random() * 0.2;
+    const withinTime = 1.0 + Math.random() * 0.3;
     const spacing = this.speed * withinTime;
 
     pattern.forEach((type, i) => {
@@ -746,10 +741,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       if (def.anim) obs.play(def.anim);
     });
 
-    // Jarak antar kelompok: waktu reaksi 0.85–1.2s (makin jauh sedikit lebih rapat, tetap adil).
+    // Jarak antar kelompok: waktu reaksi 1.5–2.2s (makin jauh sedikit lebih rapat, tetap adil).
     // Dihitung dari obstacle TERAKHIR kelompok ini, jadi kelompok berikutnya tidak pernah
     // muncul menempel di belakang kelompok sebelumnya.
-    const reactTime = Phaser.Math.Clamp(1.2 - this.distance * 0.0004, 0.85, 1.2);
+    const reactTime = Phaser.Math.Clamp(2.2 - this.distance * 0.0005, 1.5, 2.2);
     const gapPx = this.speed * reactTime;
     this._nextObstacleAt = this.distance + ((pattern.length - 1) * spacing + gapPx) / 10;
   }
@@ -772,28 +767,6 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     if (type === 'mushroom') return Phaser.Math.Clamp((h * 0.1) / OBSTACLES.mushroom.h, 0.5, 1.05);
     if (type === 'log') return Phaser.Math.Clamp((h * 0.1) / OBSTACLES.log.h, 0.5, 1.1);
     return Phaser.Math.Clamp((h * 0.08) / OBSTACLES.bird.h, 0.5, 1.0);
-  }
-
-  _spawnCoins() {
-    const n = 4 + Math.floor(Math.random() * 3);
-    const baseY = this.groundY - (85 + Math.random() * 55);
-    for (let i = 0; i < n; i++) {
-      const coin = this.coins.create(this.width + 130 + i * 38, baseY - Math.sin((i / (n - 1)) * Math.PI) * 24, 'coin');
-      coin.setScale(0.7);
-      coin.setDepth(6);
-      coin.body.setAllowGravity(false);
-      coin.body.setVelocityX(-this.speed);
-      // kilau berputar (tween mulai dari scaleX saat ini = 0.7; Phaser 4 tidak punya setScaleX)
-      this.tweens.add({
-        targets: coin,
-        scaleX: 0.15,
-        duration: 260,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
-    this._nextCoinAt = this.distance + (this.speed * (5 + Math.random() * 5)) / 10;
   }
 
   // ── Efek ringan ─────────────────────────────────────────────
@@ -874,9 +847,6 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.obstacles.getChildren().forEach((o) => {
       if (o.active) o.body.setVelocityX(-this.speed);
     });
-    this.coins.getChildren().forEach((c) => {
-      if (c.active) c.body.setVelocityX(-this.speed);
-    });
     this.fx.getChildren().forEach((f) => {
       if (f.active && f.body) {
         if (f.texture.key === 'streak') f.body.setVelocityX(-this.speed * 2.6);
@@ -886,12 +856,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
     // Spawn & bersihkan
     if (this.distance >= this._nextObstacleAt) this._spawnObstacle();
-    if (this.distance >= this._nextCoinAt) this._spawnCoins();
     this.obstacles.getChildren().forEach((o) => {
       if (o.x < -160) o.destroy();
-    });
-    this.coins.getChildren().forEach((c) => {
-      if (c.x < -100) c.destroy();
     });
     this.fx.getChildren().forEach((f) => {
       if (f.x < -120) f.destroy();
@@ -949,17 +915,6 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     } else if (this.frog.anims.currentAnim?.key !== 'jump') {
       this.frog.play('jump');
     }
-  }
-
-  _collectCoin(_frog, coin) {
-    // Body koin yang sudah di-destroy bisa terkirim oleh Phaser sebagai undefined —
-    // jangan biarkan error ini membekukan game.
-    if (!coin || !coin.active) return;
-    coin.destroy();
-    this.distance += COIN_SCORE;
-    this.score = Math.floor(this.distance);
-    this.game.events.emit('runner:score', this.score);
-    this._emitSfx('coin');
   }
 
   _gameOver() {
@@ -1234,7 +1189,6 @@ export class RunnerScreen {
       if (ctx.state === 'suspended') ctx.resume();
       const defs = {
         jump: { type: 'square', f0: 520, f1: 880, dur: 0.12, vol: 0.045 },
-        coin: { type: 'sine', f0: 880, f1: 1320, dur: 0.14, vol: 0.06 },
         start: { type: 'triangle', f0: 440, f1: 660, dur: 0.15, vol: 0.05 },
         over: { type: 'sawtooth', f0: 300, f1: 90, dur: 0.5, vol: 0.05 },
       };
