@@ -32,6 +32,17 @@ const FROG_BOUNDS = {
   jump: { x: 52, y: 64, w: 136, h: 138 },
 };
 
+// Anchor katak: titik acuan selalu di kaki (bawah), bukan tengah frame.
+// FROG_FEET_Y = frame-y terendah kaki yang terlihat (di dalam 240×240).
+// FROG_FEET_GAP = jarak kaki di atas garis tanah (10–20px) agar tidak tenggelam.
+const FROG_FEET_Y = 202;
+const FROG_FEET_GAP = 12;
+
+// Jalur rintangan udara: pusat objek terbang 130–190px di atas permukaan tanah,
+// sehingga seluruh objek selalu berada di band 90–220px dan tidak pernah menyentuh tanah.
+const AIR_ALT_MIN = 130;
+const AIR_ALT_MAX = 190;
+
 // Fisika & kesulitan
 const GRAVITY = 2300;
 const JUMP_VELOCITY = -830;
@@ -40,18 +51,23 @@ const MAX_SPEED = 640;
 const SPEED_PER_SCORE = 0.11; // akselerasi per poin jarak
 const COIN_SCORE = 50;
 
-// Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional
+// Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
+// foot = frame-y dasar objek yang terlihat di dalam texture (dipakai agar menempel ke tanah).
+// ground = true untuk rintangan darat (batu, kayu, jamur, kaktus) yang berdiri di atas tanah.
 const OBSTACLES = {
-  cactus: { tex: 'obs-cactus', w: 72, h: 140, body: { x: 14, y: 8, w: 44, h: 124 } },
-  rock: { tex: 'obs-rock', w: 84, h: 64, body: { x: 6, y: 4, w: 72, h: 56 } },
-  bird: { tex: 'obs-bird-0', anim: 'bird', w: 104, h: 60, body: { x: 8, y: 8, w: 88, h: 44 } },
-  log: { tex: 'obs-log', w: 104, h: 44, body: { x: 4, y: 4, w: 96, h: 36 } },
+  cactus: { tex: 'obs-cactus', w: 72, h: 140, foot: 132, ground: true, body: { x: 14, y: 8, w: 44, h: 124 } },
+  rock: { tex: 'obs-rock', w: 84, h: 64, foot: 60, ground: true, body: { x: 6, y: 4, w: 72, h: 56 } },
+  mushroom: { tex: 'obs-mushroom', w: 84, h: 80, foot: 80, ground: true, body: { x: 12, y: 6, w: 60, h: 72 } },
+  log: { tex: 'obs-log', w: 104, h: 44, foot: 40, ground: true, body: { x: 4, y: 4, w: 96, h: 36 } },
+  bird: { tex: 'obs-bird-0', anim: 'bird', w: 104, h: 60, foot: 55, body: { x: 8, y: 8, w: 88, h: 44 } },
 };
 
-// Pola rintangan — 60% rintangan darat (lompat), 40% udara (jongkok)
+// Pola rintangan — hanya darat (lompat) atau hanya udara (jongkok), tidak pernah dicampur
+// agar pemain selalu punya waktu bereaksi. Sekitar 60% darat, 40% udara.
 const PATTERNS = [
-  ['cactus'], ['cactus'], ['rock'], ['cactus', 'cactus'], ['rock', 'rock'], ['cactus', 'rock'],
-  ['bird'], ['log'], ['log', 'log'], ['bird', 'bird'],
+  ['cactus'], ['cactus'], ['rock'], ['mushroom'], ['log'],
+  ['cactus', 'cactus'], ['rock', 'rock'], ['cactus', 'log'], ['mushroom', 'rock'],
+  ['bird'], ['bird', 'bird'],
 ];
 
 const frameKey = (file) => file.replace('.png', '');
@@ -384,6 +400,22 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       g.fillRect(2, 6, 100, 4);
     });
 
+    // jamur (rintangan — lompat, batang menempel tanah)
+    this._tex('obs-mushroom', 84, 80, (g) => {
+      g.fillStyle(0xf2f2e9, 1);
+      g.fillRoundedRect(32, 24, 20, 56, 9);
+      g.fillStyle(0xff5d5d, 1);
+      g.fillRoundedRect(10, 4, 64, 44, 18);
+      g.fillStyle(0xe63e3e, 1);
+      g.fillRoundedRect(16, 8, 52, 34, 14);
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(28, 18, 5);
+      g.fillCircle(52, 24, 4.5);
+      g.fillCircle(40, 34, 4);
+      g.fillStyle(0x7d5a33, 1);
+      g.fillEllipse(42, 78, 44, 10);
+    });
+
     // koin bonus
     this._tex('coin', 40, 40, (g) => {
       g.fillStyle(0xc99a12, 1);
@@ -487,8 +519,9 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.groundY = h - Math.max(76, Math.round(h * 0.13));
     this.frogScale = Phaser.Math.Clamp((h * 0.14) / FROG_BOUNDS.run.h, 0.42, 0.75);
     this.frogX = Math.max(64, Math.round(w * 0.24));
-    // posisi sprite katak: telapak kaki di atas tanah
-    this.frogY = this.groundY - 2 - (FROG_BOUNDS.run.h - FROG_BOUNDS.run.y) * this.frogScale;
+    // Anchor katak di kaki (bawah): telapak kaki ~12px di atas garis tanah,
+    // tidak pernah di tengah layar dan tidak tenggelam ke dalam tanah.
+    this.frogY = this.groundY - FROG_FEET_GAP - (FROG_FEET_Y - FRAME.H / 2) * this.frogScale;
 
     this.physics.world.setBounds(0, 0, w, h);
     this.cameras.main.setBackgroundColor('#25634a');
@@ -505,8 +538,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     // Tanah (visual bergerak + hitbox statis)
     this.ground = this.add.tileSprite(w / 2, this.groundY + (h - this.groundY) / 2, w, h - this.groundY, 'ground-tile')
       .setOrigin(0.5, 0.5).setDepth(5);
-    this.groundHit = this.physics.add.staticImage(w / 2, this.groundY + 28, 'pixel');
-    this.groundHit.setDisplaySize(w + 400, 56);
+    // Lantai fisis: bagian atasnya = garis kaki katak (10–20px di atas tanah visual),
+    // tebalnya sampai jauh di bawah layar supaya katak tidak pernah tembus/tenggelam.
+    this.groundHit = this.physics.add.staticImage(w / 2, this.groundY - FROG_FEET_GAP + h, 'pixel');
+    this.groundHit.setDisplaySize(w + 400, h * 2);
     this.groundHit.refreshBody();
     this.groundHit.visible = false;
   }
@@ -565,14 +600,15 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   }
 
   _applyBody(mode) {
+    this._bodyMode = mode;
     const b = FROG_BOUNDS[mode];
-    const s = this.frogScale;
-    const padX = 10 * s;
-    const padY = 8 * s;
-    const bodyW = Math.max(14, b.w * s - padX);
-    const bodyH = Math.max(10, b.h * s - padY);
-    this.frog.body.setSize(bodyW, bodyH);
-    this.frog.body.setOffset((b.x - FRAME.W / 2) * s + padX / 2, (b.y - FRAME.H / 2) * s + padY / 2);
+    // Ukuran & offset dalam "source pixels" (ukuran frame asli 240x240).
+    // Phaser mengalikan body dengan skala sprite otomatis tiap frame, jadi hitbox
+    // selalu menyatu dengan sprite — termasuk saat animasi squash/stretch.
+    const bodyW = Math.max(14, b.w - 10);
+    const bodyH = Math.max(10, b.h - 8);
+    this.frog.body.setSize(bodyW, bodyH, false);
+    this.frog.body.setOffset(b.x + 5, b.y + 4);
   }
 
   // ── Input ───────────────────────────────────────────────────
@@ -680,32 +716,36 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     let patterns = PATTERNS;
     // Jamin rintangan darat tetap muncul: maksimal 3 udara berturut-turut
     if (this._lastGroundCount >= 3) {
-      patterns = PATTERNS.filter((p) => p.some((t) => t === 'cactus' || t === 'rock'));
+      patterns = PATTERNS.filter((p) => p.some((t) => OBSTACLES[t].ground));
     }
     const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-    const isGround = pattern.some((t) => t === 'cactus' || t === 'rock');
+    const isGround = pattern.some((t) => OBSTACLES[t].ground);
     this._lastGroundCount = isGround ? this._lastGroundCount + 1 : 0;
 
     const speedFactor = this.speed / BASE_SPEED;
-    const mixed = pattern.some((t) => t === 'cactus' || t === 'rock') && pattern.some((t) => t === 'bird' || t === 'log');
-    const spacing = (mixed ? 150 + Math.random() * 60 : 60 + Math.random() * 50) * speedFactor;
+    // Jarak antar objek dalam satu kelompok cukup lebar (tidak pernah menempel)
+    const airCount = pattern.filter((t) => t === 'bird').length;
+    const spacing = (airCount > 0 ? 170 + Math.random() * 90 : 150 + Math.random() * 90) * speedFactor;
 
     pattern.forEach((type, i) => {
       const def = OBSTACLES[type];
       const s = this._obstacleScale(type);
-      const x = this.width + 90 + i * spacing;
+      const x = this.width + 100 + i * spacing;
       let y;
-      if (type === 'bird' || type === 'log') {
-        y = this.groundY - FROG_BOUNDS.duck.h * this.frogScale - 8 - (def.h * s) / 2;
+      if (def.ground) {
+        // Rintangan darat: dasar objek yang terlihat menempel tepat di permukaan tanah
+        y = this.groundY + (def.h * 0.5 - def.foot) * s;
       } else {
-        y = this.groundY - (def.h * s) / 2;
+        // Rintangan udara: selalu di jalur 90–220px di atas tanah, tidak pernah menyentuh tanah
+        y = this.groundY - Phaser.Math.Between(AIR_ALT_MIN, AIR_ALT_MAX);
       }
       const obs = this.obstacles.create(x, y, def.tex);
       this._setupObstacle(obs, def, s);
       if (def.anim) obs.play(def.anim);
     });
 
-    const gap = Phaser.Math.Clamp(0.62 - this.distance * 0.00012, 0.4, 0.85);
+    // Jarak antar kelompok rintangan cukup luas agar adil
+    const gap = Phaser.Math.Clamp(0.9 - this.distance * 0.0001, 0.55, 1.05);
     this._nextObstacleAt = this.distance + (this.speed * gap) / 10;
   }
 
@@ -713,8 +753,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     obs.setScale(s);
     obs.setDepth(7);
     obs.body.setAllowGravity(false);
-    obs.body.setSize(def.body.w * s, def.body.h * s);
-    obs.body.setOffset(def.body.x * s, def.body.y * s);
+    // Sama seperti katak: ukuran & offset dalam source pixels biar hitbox
+    // seukuran visual rintangan (bukan lebih kecil dari tampilan).
+    obs.body.setSize(def.body.w, def.body.h, false);
+    obs.body.setOffset(def.body.x, def.body.y);
     obs.body.setVelocityX(-this.speed);
   }
 
@@ -722,13 +764,14 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     const h = this.height;
     if (type === 'cactus') return Phaser.Math.Clamp((h * 0.16) / OBSTACLES.cactus.h, 0.5, 1.1);
     if (type === 'rock') return Phaser.Math.Clamp((h * 0.09) / OBSTACLES.rock.h, 0.5, 1.1);
-    if (type === 'bird') return Phaser.Math.Clamp((h * 0.08) / OBSTACLES.bird.h, 0.5, 1.0);
-    return Phaser.Math.Clamp((h * 0.06) / OBSTACLES.log.h, 0.5, 1.0);
+    if (type === 'mushroom') return Phaser.Math.Clamp((h * 0.1) / OBSTACLES.mushroom.h, 0.5, 1.05);
+    if (type === 'log') return Phaser.Math.Clamp((h * 0.1) / OBSTACLES.log.h, 0.5, 1.1);
+    return Phaser.Math.Clamp((h * 0.08) / OBSTACLES.bird.h, 0.5, 1.0);
   }
 
   _spawnCoins() {
     const n = 4 + Math.floor(Math.random() * 3);
-    const baseY = this.groundY - (70 + Math.random() * 45);
+    const baseY = this.groundY - (85 + Math.random() * 55);
     for (let i = 0; i < n; i++) {
       const coin = this.coins.create(this.width + 130 + i * 38, baseY - Math.sin((i / (n - 1)) * Math.PI) * 24, 'coin');
       coin.setScale(0.7);
@@ -860,6 +903,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
     // Lompat: coyote time + buffering + squash saat mendarat
     if (this._grounded()) {
+      // Self-heal: pastikan kaki selalu di garis tanah (10–20px di atas tanah visual)
+      if (!this.ducking && this.frog.y > this.frogY + 2) this.frog.y = this.frogY;
       if (this._wasAirborne && !this.ducking) this._landSquash();
       this._wasAirborne = false;
       this._coyoteUntil = this.time.now + 80;
@@ -886,10 +931,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     if (this._grounded()) {
       if (this.ducking) {
         if (this.frog.anims.currentAnim?.key !== 'duck') this.frog.play('duck');
-      } else if (this.frog.anims.currentAnim?.key !== 'run') {
-        this.frog.play('run');
-      } else if (Math.random() < 0.0018 && FROG_ART === 'builtin') {
-        this.frog.play('blink');
+      } else {
+        if (this._bodyMode !== 'run') this._applyBody('run');
+        if (this.frog.anims.currentAnim?.key !== 'run') this.frog.play('run');
+        else if (Math.random() < 0.0018 && FROG_ART === 'builtin') this.frog.play('blink');
       }
     } else if (this.frog.anims.currentAnim?.key !== 'jump') {
       this.frog.play('jump');
