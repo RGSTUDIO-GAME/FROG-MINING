@@ -46,9 +46,8 @@ const AIR_ALT_MAX = 190;
 // Fisika & kesulitan
 const GRAVITY = 2300;
 const JUMP_VELOCITY = -830;
-const BASE_SPEED = 300;
+const BASE_SPEED = 280;
 const MAX_SPEED = 640;
-const SPEED_PER_SCORE = 0.11; // akselerasi per poin jarak
 const COIN_SCORE = 50;
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
@@ -103,6 +102,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
   create() {
     // Scene dipakai ulang oleh scene.restart() — reset SEMUA state di sini
+    // Anime manager bertahan antar restart; pastikan tidak tersisa pause dari game-over.
+    this.anims.resumeAll();
     this.state = 'ready';
     this.ducking = false;
     this.speed = BASE_SPEED;
@@ -119,6 +120,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this._dustTimer = 0;
     this._streakTimer = 0;
     this._best = this._readBest();
+    this._overPauseCall = null;
 
     this._buildTextures();
     this._buildAnimations();
@@ -722,10 +724,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     const isGround = pattern.some((t) => OBSTACLES[t].ground);
     this._lastGroundCount = isGround ? this._lastGroundCount + 1 : 0;
 
-    const speedFactor = this.speed / BASE_SPEED;
-    // Jarak antar objek dalam satu kelompok cukup lebar (tidak pernah menempel)
-    const airCount = pattern.filter((t) => t === 'bird').length;
-    const spacing = (airCount > 0 ? 170 + Math.random() * 90 : 150 + Math.random() * 90) * speedFactor;
+    // Jarak antar objek dalam satu kelompok: berbasis WAKTU (0.55–0.75s),
+    // jadi selalu konsisten dan tidak pernah berdempetan berapa pun kecepatannya.
+    const withinTime = 0.6 + Math.random() * 0.2;
+    const spacing = this.speed * withinTime;
 
     pattern.forEach((type, i) => {
       const def = OBSTACLES[type];
@@ -744,9 +746,12 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       if (def.anim) obs.play(def.anim);
     });
 
-    // Jarak antar kelompok rintangan cukup luas agar adil
-    const gap = Phaser.Math.Clamp(0.9 - this.distance * 0.0001, 0.55, 1.05);
-    this._nextObstacleAt = this.distance + (this.speed * gap) / 10;
+    // Jarak antar kelompok: waktu reaksi 0.85–1.2s (makin jauh sedikit lebih rapat, tetap adil).
+    // Dihitung dari obstacle TERAKHIR kelompok ini, jadi kelompok berikutnya tidak pernah
+    // muncul menempel di belakang kelompok sebelumnya.
+    const reactTime = Phaser.Math.Clamp(1.2 - this.distance * 0.0004, 0.85, 1.2);
+    const gapPx = this.speed * reactTime;
+    this._nextObstacleAt = this.distance + ((pattern.length - 1) * spacing + gapPx) / 10;
   }
 
   _setupObstacle(obs, def, s) {
@@ -778,7 +783,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       coin.setDepth(6);
       coin.body.setAllowGravity(false);
       coin.body.setVelocityX(-this.speed);
-      // kilau berputar
+      // kilau berputar (tween mulai dari scaleX saat ini = 0.7; Phaser 4 tidak punya setScaleX)
       this.tweens.add({
         targets: coin,
         scaleX: 0.15,
@@ -786,7 +791,6 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
-        onStart: () => coin.setScaleX(0.7),
       });
     }
     this._nextCoinAt = this.distance + (this.speed * (5 + Math.random() * 5)) / 10;
@@ -853,7 +857,11 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
     const dt = Math.min(delta, 34) / 1000;
     this.distance += this.speed * dt * 0.1;
-    this.speed = Math.min(MAX_SPEED, BASE_SPEED + this.distance * SPEED_PER_SCORE);
+    // Kurva kecepatan: mulai pelan lalu naik terus-menerus (eksponensial halus) sampai MAX_SPEED
+    this.speed = Math.min(
+      MAX_SPEED,
+      BASE_SPEED + (MAX_SPEED - BASE_SPEED) * (1 - Math.exp(-this.distance / 700))
+    );
     this.score = Math.floor(this.distance);
 
     // Parallax & tanah
@@ -925,16 +933,18 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
   _updateFrogAnim() {
     if (this.frog.anims.currentAnim?.key === 'blink') {
-      if (!this.frog.anims.isPlaying) this.frog.play('run');
+      if (!this.frog.anims.isPlaying) this.frog.play('run', true);
       return;
     }
     if (this._grounded()) {
       if (this.ducking) {
-        if (this.frog.anims.currentAnim?.key !== 'duck') this.frog.play('duck');
+        // play(..., true) = jangan restart kalau sudah jalan, tapi sembuhkan kalau berhenti
+        this.frog.play('duck', true);
+        if (this._bodyMode !== 'duck') this._applyBody('duck');
       } else {
         if (this._bodyMode !== 'run') this._applyBody('run');
-        if (this.frog.anims.currentAnim?.key !== 'run') this.frog.play('run');
-        else if (Math.random() < 0.0018 && FROG_ART === 'builtin') this.frog.play('blink');
+        this.frog.play('run', true);
+        if (Math.random() < 0.0018 && FROG_ART === 'builtin') this.frog.play('blink');
       }
     } else if (this.frog.anims.currentAnim?.key !== 'jump') {
       this.frog.play('jump');
@@ -942,7 +952,9 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   }
 
   _collectCoin(_frog, coin) {
-    if (!coin.active) return;
+    // Body koin yang sudah di-destroy bisa terkirim oleh Phaser sebagai undefined —
+    // jangan biarkan error ini membekukan game.
+    if (!coin || !coin.active) return;
     coin.destroy();
     this.distance += COIN_SCORE;
     this.score = Math.floor(this.distance);
@@ -976,7 +988,11 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this._emitState('over');
     this.game.events.emit('runner:gameover', { score, best, isNewBest });
 
-    this.time.delayedCall(240, () => {
+    this._overPauseCall = this.time.delayedCall(240, () => {
+      this._overPauseCall = null;
+      // Kalau scene sudah di-restart (state bukan 'over'), jangan pause scene yang baru —
+      // kalau tidak animasi akan tersisa beku setelah tombol Main Lagi.
+      if (this.state !== 'over') return;
       this.physics.pause();
       this.anims.pauseAll();
     });
