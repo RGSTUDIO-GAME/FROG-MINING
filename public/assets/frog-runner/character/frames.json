@@ -1,0 +1,110 @@
+[
+  {
+    "frame": "idle",
+    "file": "idle.png",
+    "size": [
+      72,
+      68
+    ],
+    "order": 0
+  },
+  {
+    "frame": "blink",
+    "file": "blink.png",
+    "size": [
+      73,
+      68
+    ],
+    "order": 1
+  },
+  {
+    "frame": "run-1",
+    "file": "run-1.png",
+    "size": [
+      82,
+      68
+    ],
+    "order": 2
+  },
+  {
+    "frame": "run-2",
+    "file": "run-2.png",
+    "size": [
+      80,
+      71
+    ],
+    "order": 3
+  },
+  {
+    "frame": "run-3",
+    "file": "run-3.png",
+    "size": [
+      77,
+      71
+    ],
+    "order": 4
+  },
+  {
+    "frame": "run-4",
+    "file": "run-4.png",
+    "size": [
+      78,
+      70
+    ],
+    "order": 5
+  },
+  {
+    "frame": "jump-start",
+    "file": "jump-start.png",
+    "size": [
+      72,
+      67
+    ],
+    "order": 6
+  },
+  {
+    "frame": "jump",
+    "file": "jump.png",
+    "size": [
+      87,
+      61
+    ],
+    "order": 7
+  },
+  {
+    "frame": "fall",
+    "file": "fall.png",
+    "size": [
+      81,
+      64
+    ],
+    "order": 8
+  },
+  {
+    "frame": "landing",
+    "file": "landing.png",
+    "size": [
+      78,
+      49
+    ],
+    "order": 9
+  },
+  {
+    "frame": "duck-1",
+    "file": "duck-1.png",
+    "size": [
+      74,
+      39
+    ],
+    "order": 10
+  },
+  {
+    "frame": "duck-2",
+    "file": "duck-2.png",
+    "size": [
+      69,
+      43
+    ],
+    "order": 11
+  }
+]

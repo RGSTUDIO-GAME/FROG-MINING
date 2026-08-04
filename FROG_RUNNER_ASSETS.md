@@ -24,6 +24,40 @@ Untuk setiap aset, mohon sertakan:
 - **Jumlah frame per animasi** (jika berupa sheet animasi)
 - **Catatan skala** jika ada (mis. karakter 2× dari ukuran asli)
 
+## Ukuran Final yang Disarankan
+
+Ukuran di bawah ini sudah disesuaikan dengan cara render di `src/screens/RunnerScreen.js`.
+Kalau kamu kirim aset baru, paling aman ikuti ukuran target ini supaya tinggal pasang.
+
+| Aset | Ukuran sumber yang disarankan | Cara dipakai di game |
+|------|------------------------------|----------------------|
+| **Background langit utama** | `1920x1080` atau `1600x900` | Full-screen cover di belakang canvas. Kalau ingin parallax, bisa dikirim sebagai beberapa layer. |
+| **Awan** | `200x64` atau `400x128` | Dipakai sebagai tile/background layer yang bisa diulang horizontal. |
+| **Bukit jauh** | `400x220` | Layer parallax jauh, idealnya seamless horizontal. |
+| **Bukit dekat / semak** | `320x140` | Layer parallax dekat, idealnya seamless horizontal. |
+| **Tanah / ground tile** | `96x64` | Tile yang diulang sepanjang lantai. Bagian atas harus nyambung mulus. |
+| **Karakter katak** | Disarankan 1 ukuran kanvas konsisten, mis. `128x128` atau `240x240` | Semua pose sebaiknya punya canvas yang sama supaya anchor dan hitbox stabil. |
+
+### Catatan penting untuk tanah
+
+- Ground di runner saat ini bukan 1 gambar besar, tapi **tile berulang**.
+- Jadi yang dibutuhkan bukan gambar panjang, melainkan **1 potong tile yang seamless**.
+- Bagian atas tanah harus rapi kalau disambung ke kiri/kanan.
+- Kalau mau ada variasi, kirim:
+  - permukaan rumput
+  - badan tanah
+  - transisi tanah ke bawah
+
+### Catatan penting untuk langit
+
+- Langit paling aman dikirim sebagai **background lebar**.
+- Jika kamu ingin ada awan/bukit terpisah, lebih bagus dipisah jadi layer:
+  - `sky` / gradient
+  - `cloud`
+  - `hill-far`
+  - `hill-near`
+- Dengan begitu saya bisa pasang parallax tanpa gambar jadi pecah.
+
 ---
 
 ## Urutan Prioritas Aset
@@ -33,7 +67,7 @@ Untuk setiap aset, mohon sertakan:
 |----|------|--------|--------|
 | A1 | **Sprite karakter katak** | Sementara: art kode (builtin) — `FROG_ART='builtin'`. Frame PNG pengganti bisa dipasang via `FROG_ART='frames'` | Dihapus 2026-08-02 (diganti builtin) 🔄 |
 | A2 | **Background (latar belakang)** | Langit + awan + bukit parallax (buatan kode) | Terpasang ✅ |
-| A3 | **Ground / tanah** | Tile rumput + tanah (buatan kode) | Terpasang ✅ |
+| A3 | **Ground / tanah** | Tile rumput + tanah. Asset ground baru sudah diterima di `public/assets/frog-runner/background/ground.png` | Diterima, belum dipasang ⏳ |
 
 ### 📦 Grup B — Rintangan
 | No | Aset | Detail | Status |
@@ -80,9 +114,11 @@ Untuk setiap aset, mohon sertakan:
 | Tanggal | Aset | Status | Catatan |
 |---------|------|--------|---------|
 2026-08-02 | A1 — Karakter katak | Diganti art kode 🔄 | Frame A1 dihapus. Katak digambar ulang dengan Phaser Graphics (4 frame lari, 2 jongkok, 2 lompat, 1 kedip) supaya animasi jelas & mudah diganti nanti |
+2026-08-04 | A3 — Ground / tanah | Diterima | File disimpan di `public/assets/frog-runner/background/ground.png` (PNG RGBA 1536×1024). Belum dipasang ke runner |
 
 ## Catatan
 
-- Semua aset disimpan di folder `public/assets/frog-runner/` saat eksekusi (belum dibuat).
+- Semua aset disimpan di folder `public/assets/frog-runner/` saat eksekusi.
+- Ground yang sudah diterima tersimpan di `public/assets/frog-runner/background/ground.png`.
 - Sekarang game memakai art kode — instruksi ganti aset ada di `public/assets/frog-runner/README.md`.
 - Jika ada aset yang kurang jelas (mis. ukuran frame tidak konsisten), saya akan tanya sebelum dipakai.
