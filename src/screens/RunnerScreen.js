@@ -545,7 +545,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       this.anims.create({
         key: 'run',
         frames: frames(this._framesFor('run')),
-        frameRate: 12,
+        frameRate: 8,
         repeat: -1,
       });
     }
@@ -999,17 +999,16 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   _updateFrogAnim() {
     if (this._grounded()) {
       if (this.ducking) {
-        // play(..., true) = jangan restart kalau sudah jalan, tapi sembuhkan kalau berhenti
-        this.frog.play('duck', true);
+        if (this.frog.anims.currentAnim?.key !== 'duck') this.frog.play('duck');
         if (this._bodyMode !== 'duck') this._applyBody('duck');
       } else if (FROG_ART === 'frames' && this.time.now < this._landingUntil) {
         if (this._bodyMode !== 'landing') this._applyBody('landing');
       } else if (FROG_ART === 'frames') {
         if (this._bodyMode !== 'run') this._applyBody('run');
-        this.frog.play('run', true);
+        if (this.frog.anims.currentAnim?.key !== 'run') this.frog.play('run');
       } else {
         if (this._bodyMode !== 'run') this._applyBody('run');
-        this.frog.play('run', true);
+        if (this.frog.anims.currentAnim?.key !== 'run') this.frog.play('run');
       }
     } else if (this.frog.anims.currentAnim?.key !== 'jump') {
       this.frog.play('jump');
