@@ -44,9 +44,10 @@ const FROG_BOUNDS = {
 
 // Anchor katak: titik acuan selalu di kaki (bawah), bukan tengah frame.
 // FROG_FEET_Y = frame-y terendah kaki yang terlihat (di dalam 240×240).
-// FROG_FEET_GAP = jarak kaki di atas garis tanah (10–20px) agar tidak tenggelam.
-const FROG_FEET_Y = 228;
-const FROG_FEET_GAP = 10;
+// PNG frame katak punya padding bawah sekitar 4px, jadi anchor harus mengikuti itu
+// supaya kaki benar-benar menapak dan tidak tampak melayang.
+const FROG_FEET_Y = 236;
+const FROG_FEET_GAP = 4;
 
 // Jalur rintangan udara: pusat objek terbang 130–190px di atas permukaan tanah,
 // sehingga seluruh objek selalu berada di band 90–220px dan tidak pernah menyentuh tanah.
@@ -212,8 +213,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   _buildBackgroundTextures() {
     if (FROG_ART !== 'frames') return;
     this._makeCropTexture('bg-cloud-band', 'bg-clouds', 0, 1024);
-    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 250, 640);
-    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 320, 600);
+    // Crop yang terlalu tinggi membuat layer bukit hanya menangkap area langit.
+    // Ambil band yang lebih rendah supaya bentuk bukit benar-benar masuk ke viewport.
+    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 450, 420);
+    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 520, 360);
     this._makeCropTexture('bg-ground-band', 'bg-ground', 420, 240);
   }
 
