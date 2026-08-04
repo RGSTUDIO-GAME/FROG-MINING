@@ -65,9 +65,9 @@ Kalau kamu kirim aset baru, paling aman ikuti ukuran target ini supaya tinggal p
 ### 📦 Grup A — Inti Gameplay (paling penting, dikirim pertama)
 | No | Aset | Detail | Status |
 |----|------|--------|--------|
-| A1 | **Sprite karakter katak** | Sementara: art kode (builtin) — `FROG_ART='builtin'`. Frame PNG pengganti bisa dipasang via `FROG_ART='frames'` | Dihapus 2026-08-02 (diganti builtin) 🔄 |
-| A2 | **Background (latar belakang)** | Langit + awan + bukit parallax (buatan kode) | Terpasang ✅ |
-| A3 | **Ground / tanah** | Tile rumput + tanah. Asset ground baru sudah diterima di `public/assets/frog-runner/background/ground.png` | Diterima, belum dipasang ⏳ |
+| A1 | **Sprite karakter katak** | PNG frame individual di `public/assets/frog-runner/character/` — dipakai via `FROG_ART='frames'` | Terpasang ✅ |
+| A2 | **Background (latar belakang)** | Langit + awan + bukit parallax dari PNG di `public/assets/frog-runner/background/` | Terpasang ✅ |
+| A3 | **Ground / tanah** | Tile rumput + tanah dari `public/assets/frog-runner/background/ground.png` | Terpasang ✅ |
 
 ### 📦 Grup B — Rintangan
 | No | Aset | Detail | Status |
@@ -114,7 +114,8 @@ Kalau kamu kirim aset baru, paling aman ikuti ukuran target ini supaya tinggal p
 | Tanggal | Aset | Status | Catatan |
 |---------|------|--------|---------|
 2026-08-02 | A1 — Karakter katak | Diganti art kode 🔄 | Frame A1 dihapus. Katak digambar ulang dengan Phaser Graphics (4 frame lari, 2 jongkok, 2 lompat, 1 kedip) supaya animasi jelas & mudah diganti nanti |
-2026-08-04 | A3 — Ground / tanah | Diterima | File disimpan di `public/assets/frog-runner/background/ground.png` (PNG RGBA 1536×1024). Belum dipasang ke runner |
+2026-08-04 | A2 — Background | Diterima & dipasang | File sky/cloud/hill masuk ke `public/assets/frog-runner/background/` dan dipakai di runner |
+2026-08-04 | A3 — Ground / tanah | Diterima & dipasang | File `public/assets/frog-runner/background/ground.png` dipakai sebagai ground layer |
 
 ## Catatan
 

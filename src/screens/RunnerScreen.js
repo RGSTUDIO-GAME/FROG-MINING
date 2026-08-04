@@ -2,22 +2,29 @@ import { Logger } from '@utils/logger.js';
 
 // ══════════════════════════════════════════════════════════════
 // FROG RUNNER — mini-game (Chrome-Dino style)
-// Semua aset sekarang dibuat dengan kode (builtin) — katak, tanah,
-// rintangan, koin. Tidak butuh file gambar sama sekali.
+// Karakter, sky, cloud, hill, dan ground sekarang memakai aset PNG yang
+// sudah kamu kirim. Rintangan dan efek ringan masih dibuat dengan kode.
 //
-// MAU GANTI KARAKTER DENGAN PNG SENDIRI NANTI?
-//   1. Taruh frame PNG kamu di: public/assets/frog-runner/frames/
-//   2. Ubah FROG_ART di bawah jadi 'frames'
-//   3. Isi daftar nama file di ASSETS (RUN / DUCK / JUMP)
-// Semua logika gameplay tidak perlu diubah.
+// Jika nanti ada aset tambahan, tinggal lanjutkan daftar file di bawah dan
+// sesuaikan loader. Logika gameplay tidak perlu dirombak.
 // ══════════════════════════════════════════════════════════════
 
-const FROG_ART = 'builtin'; // 'builtin' (kode) | 'frames' (PNG sendiri)
-const FRAME_DIR = `${import.meta.env.BASE_URL}assets/frog-runner/frames/`;
+const FROG_ART = 'frames'; // 'builtin' (kode) | 'frames' (PNG sendiri)
+const FRAME_DIR = `${import.meta.env.BASE_URL}assets/frog-runner/character/`;
+const BG_DIR = `${import.meta.env.BASE_URL}assets/frog-runner/background/`;
 const ASSETS = {
-  RUN: ['frog-r1-0.png', 'frog-r1-1.png', 'frog-r1-2.png', 'frog-r1-3.png'],
-  DUCK: ['frog-r2-0.png', 'frog-r2-1.png', 'frog-r2-2.png', 'frog-r2-3.png'],
-  JUMP: ['frog-r3-0.png', 'frog-r3-1.png', 'frog-r3-2.png'],
+  IDLE: 'idle.png',
+  BLINK: 'blink.png',
+  RUN: ['run-1.png', 'run-2.png', 'run-3.png', 'run-4.png'],
+  DUCK: ['duck-1.png', 'duck-2.png'],
+  JUMP: ['jump-start.png', 'jump.png', 'fall.png', 'landing.png'],
+};
+const BG_ASSETS = {
+  SKY: 'sky.png',
+  CLOUDS: 'clouds.png',
+  HILL_FAR: 'hill-far.png',
+  HILL_NEAR: 'hill-near.png',
+  GROUND: 'ground.png',
 };
 
 const RUNNER_BEST_KEY = 'frog-runner-best';
@@ -27,16 +34,19 @@ const FRAME = { W: 240, H: 240 };
 
 // Area tubuh katak di dalam frame — dipakai untuk hitbox
 const FROG_BOUNDS = {
-  run: { x: 62, y: 88, w: 116, h: 118 },
-  duck: { x: 44, y: 112, w: 152, h: 90 },
-  jump: { x: 52, y: 64, w: 136, h: 138 },
+  idle: { x: 80, y: 174, w: 80, h: 58 },
+  run: { x: 80, y: 174, w: 80, h: 58 },
+  duck: { x: 84, y: 198, w: 70, h: 34 },
+  jump: { x: 76, y: 170, w: 86, h: 60 },
+  fall: { x: 76, y: 176, w: 86, h: 56 },
+  landing: { x: 80, y: 182, w: 78, h: 50 },
 };
 
 // Anchor katak: titik acuan selalu di kaki (bawah), bukan tengah frame.
 // FROG_FEET_Y = frame-y terendah kaki yang terlihat (di dalam 240×240).
 // FROG_FEET_GAP = jarak kaki di atas garis tanah (10–20px) agar tidak tenggelam.
-const FROG_FEET_Y = 202;
-const FROG_FEET_GAP = 12;
+const FROG_FEET_Y = 228;
+const FROG_FEET_GAP = 10;
 
 // Jalur rintangan udara: pusat objek terbang 130–190px di atas permukaan tanah,
 // sehingga seluruh objek selalu berada di band 90–220px dan tidak pernah menyentuh tanah.
@@ -69,6 +79,8 @@ const PATTERNS = [
 ];
 
 const frameKey = (file) => file.replace('.png', '');
+const loadKey = (name) => `src-${name}`;
+const frogKey = (name) => `frog-${name}`;
 
 // ══════════════════════════════════════════════════════════════
 // Scene Phaser (factory — Phaser di-load dynamic import)
@@ -89,13 +101,22 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this._lastSquashAt = 0;
     this._dustTimer = 0;
     this._streakTimer = 0;
+    this._landingUntil = 0;
   }
 
   preload() {
+    this.load.image('bg-sky', BG_DIR + BG_ASSETS.SKY);
+    this.load.image('bg-clouds', BG_DIR + BG_ASSETS.CLOUDS);
+    this.load.image('bg-hill-far', BG_DIR + BG_ASSETS.HILL_FAR);
+    this.load.image('bg-hill-near', BG_DIR + BG_ASSETS.HILL_NEAR);
+    this.load.image('bg-ground', BG_DIR + BG_ASSETS.GROUND);
+
     if (FROG_ART === 'frames') {
-      Object.values(ASSETS)
-        .flat()
-        .forEach((file) => this.load.image(frameKey(file), FRAME_DIR + file));
+      this.load.image(loadKey(ASSETS.IDLE), FRAME_DIR + ASSETS.IDLE);
+      this.load.image(loadKey(ASSETS.BLINK), FRAME_DIR + ASSETS.BLINK);
+      Object.values(ASSETS.RUN).flat().forEach((file) => this.load.image(loadKey(file), FRAME_DIR + file));
+      Object.values(ASSETS.DUCK).flat().forEach((file) => this.load.image(loadKey(file), FRAME_DIR + file));
+      Object.values(ASSETS.JUMP).flat().forEach((file) => this.load.image(loadKey(file), FRAME_DIR + file));
     }
   }
 
@@ -120,6 +141,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this._best = this._readBest();
     this._overPauseCall = null;
 
+    this._buildBackgroundTextures();
+    this._buildFrameTextures();
     this._buildTextures();
     this._buildAnimations();
     this._initLayout();
@@ -153,6 +176,47 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.game.events.emit('runner:sfx', name);
   }
 
+  _makeCanvasTexture(key, srcKey) {
+    if (this.textures.exists(key)) return;
+    const src = this.textures.get(srcKey)?.getSourceImage?.();
+    if (!src) return;
+    const canvas = this.textures.createCanvas(key, FRAME.W, FRAME.H);
+    const ctx = canvas.getContext();
+    ctx.clearRect(0, 0, FRAME.W, FRAME.H);
+    const x = Math.round((FRAME.W - src.width) / 2);
+    const y = Math.round(FRAME.H - src.height - 2);
+    ctx.drawImage(src, x, y);
+    canvas.refresh();
+  }
+
+  _makeCropTexture(key, srcKey, cropY, cropH) {
+    if (this.textures.exists(key)) return;
+    const src = this.textures.get(srcKey)?.getSourceImage?.();
+    if (!src) return;
+    const canvas = this.textures.createCanvas(key, src.width, cropH);
+    const ctx = canvas.getContext();
+    ctx.clearRect(0, 0, src.width, cropH);
+    ctx.drawImage(src, 0, cropY, src.width, cropH, 0, 0, src.width, cropH);
+    canvas.refresh();
+  }
+
+  _buildFrameTextures() {
+    if (FROG_ART !== 'frames') return;
+    this._makeCanvasTexture(frogKey('idle'), loadKey(ASSETS.IDLE));
+    this._makeCanvasTexture(frogKey('blink'), loadKey(ASSETS.BLINK));
+    ASSETS.RUN.forEach((file) => this._makeCanvasTexture(frogKey(frameKey(file)), loadKey(file)));
+    ASSETS.DUCK.forEach((file) => this._makeCanvasTexture(frogKey(frameKey(file)), loadKey(file)));
+    ASSETS.JUMP.forEach((file) => this._makeCanvasTexture(frogKey(frameKey(file)), loadKey(file)));
+  }
+
+  _buildBackgroundTextures() {
+    if (FROG_ART !== 'frames') return;
+    this._makeCropTexture('bg-cloud-band', 'bg-clouds', 0, 1024);
+    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 360, 520);
+    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 560, 320);
+    this._makeCropTexture('bg-ground-band', 'bg-ground', 398, 260);
+  }
+
   // ── Pembuat texture (semua aset digambar dengan kode) ───────
 
   _tex(key, w, h, draw) {
@@ -164,7 +228,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   }
 
   _framesFor(pose) {
-    if (FROG_ART === 'frames') return ASSETS[pose.toUpperCase()].map(frameKey);
+    if (FROG_ART === 'frames') return ASSETS[pose.toUpperCase()].map((file) => frogKey(frameKey(file)));
     const n = pose === 'run' ? 4 : 2;
     return Array.from({ length: n }, (_, i) => `frog-${pose}-${i}`);
   }
@@ -296,7 +360,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       g.fillRect(0, 0, 1, 1);
     });
 
-    // karakter katak (builtin)
+    // karakter katak (builtin fallback)
     if (FROG_ART === 'builtin') {
       this._tex('frog-run-0', FRAME.W, FRAME.H, (g) => this._drawFrog(g, 'run', 0, 4));
       this._tex('frog-run-1', FRAME.W, FRAME.H, (g) => this._drawFrog(g, 'run', 1, 4));
@@ -307,50 +371,50 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       this._tex('frog-jump-0', FRAME.W, FRAME.H, (g) => this._drawFrog(g, 'jump', 0, 2));
       this._tex('frog-jump-1', FRAME.W, FRAME.H, (g) => this._drawFrog(g, 'jump', 1, 2));
       this._tex('frog-blink', FRAME.W, FRAME.H, (g) => this._drawFrog(g, 'blink', 0, 4));
+    } else {
+      // tanah: rumput + tanah berlumpur
+      this._tex('ground-tile', 96, 64, (g) => {
+        g.fillStyle(0x6b4f2a, 1);
+        g.fillRect(0, 0, 96, 64);
+        g.fillStyle(0x7d5a33, 1);
+        for (let i = 0; i < 6; i++) g.fillCircle(8 + i * 16, 34 + (i % 3) * 12, 4);
+        g.fillStyle(0x4a3b1f, 1);
+        for (let i = 0; i < 5; i++) g.fillRect(4 + i * 20, 46 + (i % 2) * 8, 10, 3);
+        g.fillStyle(0x52b788, 1);
+        g.fillRect(0, 0, 96, 18);
+        g.fillStyle(0x74c69d, 1);
+        g.fillRect(0, 0, 96, 7);
+        g.fillStyle(0x3f9e38, 1);
+        for (let i = 0; i < 8; i++) g.fillRect(i * 13, 4 + (i % 3) * 5, 3, 8);
+      });
+
+      // bukit latar (parallax jauh)
+      this._tex('hill-far', 400, 220, (g) => {
+        g.fillStyle(0x2f7a5b, 1);
+        g.fillRect(0, 150, 400, 70);
+        g.fillCircle(80, 160, 90);
+        g.fillCircle(220, 160, 120);
+        g.fillCircle(360, 160, 80);
+      });
+
+      // semak latar (parallax dekat)
+      this._tex('hill-near', 320, 140, (g) => {
+        g.fillStyle(0x1d4a35, 1);
+        g.fillRect(0, 96, 320, 44);
+        g.fillCircle(60, 100, 60);
+        g.fillCircle(170, 100, 80);
+        g.fillCircle(280, 100, 55);
+      });
+
+      // awan (parallax paling jauh)
+      this._tex('cloud', 200, 64, (g) => {
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(52, 40, 22);
+        g.fillCircle(96, 30, 28);
+        g.fillCircle(140, 42, 20);
+        g.fillRoundedRect(30, 40, 140, 20, 10);
+      });
     }
-
-    // tanah: rumput + tanah berlumpur
-    this._tex('ground-tile', 96, 64, (g) => {
-      g.fillStyle(0x6b4f2a, 1);
-      g.fillRect(0, 0, 96, 64);
-      g.fillStyle(0x7d5a33, 1);
-      for (let i = 0; i < 6; i++) g.fillCircle(8 + i * 16, 34 + (i % 3) * 12, 4);
-      g.fillStyle(0x4a3b1f, 1);
-      for (let i = 0; i < 5; i++) g.fillRect(4 + i * 20, 46 + (i % 2) * 8, 10, 3);
-      g.fillStyle(0x52b788, 1);
-      g.fillRect(0, 0, 96, 18);
-      g.fillStyle(0x74c69d, 1);
-      g.fillRect(0, 0, 96, 7);
-      g.fillStyle(0x3f9e38, 1);
-      for (let i = 0; i < 8; i++) g.fillRect(i * 13, 4 + (i % 3) * 5, 3, 8);
-    });
-
-    // bukit latar (parallax jauh)
-    this._tex('hill-far', 400, 220, (g) => {
-      g.fillStyle(0x2f7a5b, 1);
-      g.fillRect(0, 150, 400, 70);
-      g.fillCircle(80, 160, 90);
-      g.fillCircle(220, 160, 120);
-      g.fillCircle(360, 160, 80);
-    });
-
-    // semak latar (parallax dekat)
-    this._tex('hill-near', 320, 140, (g) => {
-      g.fillStyle(0x1d4a35, 1);
-      g.fillRect(0, 96, 320, 44);
-      g.fillCircle(60, 100, 60);
-      g.fillCircle(170, 100, 80);
-      g.fillCircle(280, 100, 55);
-    });
-
-    // awan (parallax paling jauh)
-    this._tex('cloud', 200, 64, (g) => {
-      g.fillStyle(0xffffff, 1);
-      g.fillCircle(52, 40, 22);
-      g.fillCircle(96, 30, 28);
-      g.fillCircle(140, 42, 20);
-      g.fillRoundedRect(30, 40, 140, 20, 10);
-    });
 
     // kaktus (rintangan — lompat, warna kontras + bunga)
     this._tex('obs-cactus', 72, 140, (g) => {
@@ -466,6 +530,14 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
   _buildAnimations() {
     const frames = (keys) => keys.map((key) => ({ key }));
+    if (FROG_ART === 'frames' && !this.anims.exists('idle')) {
+      this.anims.create({
+        key: 'idle',
+        frames: frames([frogKey('idle'), frogKey('blink'), frogKey('idle')]),
+        frameRate: 2,
+        repeat: -1,
+      });
+    }
     if (!this.anims.exists('run')) {
       this.anims.create({
         key: 'run',
@@ -487,6 +559,14 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
         key: 'jump',
         frames: frames(this._framesFor('jump')),
         frameRate: 10,
+        repeat: 0,
+      });
+    }
+    if (FROG_ART === 'frames' && !this.anims.exists('land')) {
+      this.anims.create({
+        key: 'land',
+        frames: frames([frogKey('landing'), frogKey('idle')]),
+        frameRate: 8,
         repeat: 0,
       });
     }
@@ -517,26 +597,30 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.width = w;
     this.height = h;
     this.groundY = h - Math.max(76, Math.round(h * 0.13));
-    this.frogScale = Phaser.Math.Clamp((h * 0.1) / FROG_BOUNDS.run.h, 0.34, 0.62);
+    this.frogScale = Phaser.Math.Clamp((h * 0.12) / FROG_BOUNDS.run.h, 0.45, 1.05);
     this.frogX = Math.max(64, Math.round(w * 0.24));
     // Anchor katak di kaki (bawah): telapak kaki ~12px di atas garis tanah,
     // tidak pernah di tengah layar dan tidak tenggelam ke dalam tanah.
     this.frogY = this.groundY - FROG_FEET_GAP - (FROG_FEET_Y - FRAME.H / 2) * this.frogScale;
 
     this.physics.world.setBounds(0, 0, w, h);
-    this.cameras.main.setBackgroundColor('#25634a');
+    this.cameras.main.setBackgroundColor('#9cdcf7');
 
-    // Awan (parallax paling jauh)
-    this.clouds = this.add.tileSprite(w / 2, h * 0.1, w, 64, 'cloud').setAlpha(0.35).setDepth(1);
+    // Sky penuh
+    this.sky = this.add.image(w / 2, h / 2, 'bg-sky')
+      .setDisplaySize(w, h)
+      .setDepth(0);
 
-    // Parallax latar
-    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.34, w, h * 0.26, 'hill-far')
-      .setOrigin(0.5, 0.5).setAlpha(0.55).setDepth(3);
-    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.17, w, h * 0.16, 'hill-near')
-      .setOrigin(0.5, 0.5).setAlpha(0.7).setDepth(4);
+    // Awan / bukit parallax
+    this.clouds = this.add.tileSprite(w / 2, h * 0.14, w, Math.max(90, Math.round(h * 0.34)), 'bg-cloud-band')
+      .setOrigin(0.5, 0.5).setAlpha(0.34).setDepth(1);
+    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.30, w, Math.max(180, Math.round(h * 0.32)), 'bg-hill-far-band')
+      .setOrigin(0.5, 0.5).setAlpha(0.58).setDepth(3);
+    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.13, w, Math.max(140, Math.round(h * 0.22)), 'bg-hill-near-band')
+      .setOrigin(0.5, 0.5).setAlpha(0.76).setDepth(4);
 
     // Tanah (visual bergerak + hitbox statis)
-    this.ground = this.add.tileSprite(w / 2, this.groundY + (h - this.groundY) / 2, w, h - this.groundY, 'ground-tile')
+    this.ground = this.add.tileSprite(w / 2, this.groundY + (h - this.groundY) / 2, w, h - this.groundY, 'bg-ground-band')
       .setOrigin(0.5, 0.5).setDepth(5);
     // Lantai fisis: bagian atasnya = garis kaki katak (10–20px di atas tanah visual),
     // tebalnya sampai jauh di bawah layar supaya katak tidak pernah tembus/tenggelam.
@@ -547,15 +631,15 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   }
 
   _createPlayer() {
-    const tex = FROG_ART === 'frames' ? frameKey(ASSETS.RUN[0]) : 'frog-run-0';
+    const tex = FROG_ART === 'frames' ? frogKey('idle') : 'frog-run-0';
     this.frog = this.physics.add.sprite(this.frogX, this.frogY, tex);
     this.frog.setOrigin(0.5, 0.5);
     this.frog.setScale(this.frogScale);
     this.frog.setDepth(10);
     this.frog.setCollideWorldBounds(true);
-    this._applyBody('run');
+    this._applyBody('idle');
     this.physics.add.collider(this.frog, this.groundHit);
-    this.frog.play('run');
+    this.frog.play(FROG_ART === 'frames' ? 'idle' : 'run');
 
     // Gerakan mengambang pelan saat mode ready (biar terasa hidup)
     this._idleTween = this.tweens.add({
@@ -669,6 +753,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.frog.setVelocityY(JUMP_VELOCITY);
     this._applyBody('jump');
     this._wasAirborne = true;
+    this._landingUntil = 0;
+    if (FROG_ART === 'frames') this.frog.play('jump', true);
     // regang saat melompat
     const s = this.frogScale;
     this.tweens.add({ targets: this.frog, scaleX: s * 0.92, scaleY: s * 1.08, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
@@ -680,10 +766,16 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.speed = BASE_SPEED;
     this._nextObstacleAt = this.distance + 30;
     this._wasAirborne = false;
+    this._landingUntil = 0;
     if (this._idleTween) {
       this._idleTween.stop();
       this._idleTween = null;
       this.frog.y = this.frogY;
+    }
+    if (FROG_ART === 'frames') {
+      this.frog.play('run', true);
+    } else {
+      this.frog.play('run', true);
     }
     this._emitState('running');
     this._emitSfx('start');
@@ -879,7 +971,11 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     if (this._grounded()) {
       // Self-heal: pastikan kaki selalu di garis tanah (10–20px di atas tanah visual)
       if (!this.ducking && this.frog.y > this.frogY + 2) this.frog.y = this.frogY;
-      if (this._wasAirborne && !this.ducking) this._landSquash();
+      if (this._wasAirborne && !this.ducking) {
+        this._landingUntil = this.time.now + 140;
+        this._landSquash();
+        if (FROG_ART === 'frames') this.frog.play('land', true);
+      }
       this._wasAirborne = false;
       this._coyoteUntil = this.time.now + 80;
       if (this._jumpQueued) this._doJump();
@@ -898,19 +994,19 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   }
 
   _updateFrogAnim() {
-    if (this.frog.anims.currentAnim?.key === 'blink') {
-      if (!this.frog.anims.isPlaying) this.frog.play('run', true);
-      return;
-    }
     if (this._grounded()) {
       if (this.ducking) {
         // play(..., true) = jangan restart kalau sudah jalan, tapi sembuhkan kalau berhenti
         this.frog.play('duck', true);
         if (this._bodyMode !== 'duck') this._applyBody('duck');
+      } else if (FROG_ART === 'frames' && this.time.now < this._landingUntil) {
+        if (this._bodyMode !== 'landing') this._applyBody('landing');
+      } else if (FROG_ART === 'frames') {
+        if (this._bodyMode !== 'run') this._applyBody('run');
+        this.frog.play('run', true);
       } else {
         if (this._bodyMode !== 'run') this._applyBody('run');
         this.frog.play('run', true);
-        if (Math.random() < 0.0018 && FROG_ART === 'builtin') this.frog.play('blink');
       }
     } else if (this.frog.anims.currentAnim?.key !== 'jump') {
       this.frog.play('jump');
@@ -924,6 +1020,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     if (this._idleTween) {
       this._idleTween.stop();
       this._idleTween = null;
+    }
+    if (FROG_ART === 'frames') {
+      this.frog.anims.stop();
+      this.frog.setTexture(frogKey('fall'));
     }
     this.frog.setTint(0xff8a7a);
     this.frog.setVelocityY(-460);
