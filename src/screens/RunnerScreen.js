@@ -58,7 +58,7 @@ const AIR_ALT_MAX = 190;
 const GRAVITY = 2300;
 const JUMP_VELOCITY = -830;
 const BASE_SPEED = 280;
-const MAX_SPEED = 640;
+const MAX_SPEED = 560;
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
 // foot = frame-y dasar objek yang terlihat di dalam texture (dipakai agar menempel ke tanah).
@@ -615,15 +615,15 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       .setDepth(0);
 
     // Awan / bukit parallax
-    this.clouds = this.add.tileSprite(w / 2, h * 0.14, w, Math.max(90, Math.round(h * 0.34)), 'bg-cloud-band')
+    this.clouds = this.add.tileSprite(w / 2, h * 0.14, w, Math.max(110, Math.round(h * 0.40)), 'bg-cloud-band')
       .setOrigin(0.5, 0.5).setAlpha(0.34).setDepth(1);
-    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.30, w, Math.max(180, Math.round(h * 0.32)), 'bg-hill-far-band')
+    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.34, w, Math.max(220, Math.round(h * 0.40)), 'bg-hill-far-band')
       .setOrigin(0.5, 0.5).setAlpha(0.58).setDepth(3);
-    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.13, w, Math.max(140, Math.round(h * 0.22)), 'bg-hill-near-band')
+    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.18, w, Math.max(220, Math.round(h * 0.34)), 'bg-hill-near-band')
       .setOrigin(0.5, 0.5).setAlpha(0.76).setDepth(4);
 
     // Tanah (visual bergerak + hitbox statis)
-    this.ground = this.add.tileSprite(w / 2, h, w, h - this.groundY, 'bg-ground-band')
+    this.ground = this.add.tileSprite(w / 2, h, w, Math.max(160, h - this.groundY + 44), 'bg-ground-band')
       .setOrigin(0.5, 1).setDepth(5);
     // Lantai fisis: bagian atasnya = garis kaki katak (10–20px di atas tanah visual),
     // tebalnya sampai jauh di bawah layar supaya katak tidak pernah tembus/tenggelam.
@@ -928,7 +928,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     // Kurva kecepatan: mulai pelan lalu naik terus-menerus (eksponensial halus) sampai MAX_SPEED
     this.speed = Math.min(
       MAX_SPEED,
-      BASE_SPEED + (MAX_SPEED - BASE_SPEED) * (1 - Math.exp(-this.distance / 700))
+      BASE_SPEED + (MAX_SPEED - BASE_SPEED) * (1 - Math.exp(-this.distance / 1000))
     );
     this.score = Math.floor(this.distance);
 
