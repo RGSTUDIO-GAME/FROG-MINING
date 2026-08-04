@@ -212,9 +212,9 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   _buildBackgroundTextures() {
     if (FROG_ART !== 'frames') return;
     this._makeCropTexture('bg-cloud-band', 'bg-clouds', 0, 1024);
-    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 360, 520);
-    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 560, 320);
-    this._makeCropTexture('bg-ground-band', 'bg-ground', 398, 260);
+    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 250, 640);
+    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 320, 600);
+    this._makeCropTexture('bg-ground-band', 'bg-ground', 420, 240);
   }
 
   // ── Pembuat texture (semua aset digambar dengan kode) ───────
@@ -620,8 +620,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5).setAlpha(0.76).setDepth(4);
 
     // Tanah (visual bergerak + hitbox statis)
-    this.ground = this.add.tileSprite(w / 2, this.groundY + (h - this.groundY) / 2, w, h - this.groundY, 'bg-ground-band')
-      .setOrigin(0.5, 0.5).setDepth(5);
+    this.ground = this.add.tileSprite(w / 2, h, w, h - this.groundY, 'bg-ground-band')
+      .setOrigin(0.5, 1).setDepth(5);
     // Lantai fisis: bagian atasnya = garis kaki katak (10–20px di atas tanah visual),
     // tebalnya sampai jauh di bawah layar supaya katak tidak pernah tembus/tenggelam.
     this.groundHit = this.physics.add.staticImage(w / 2, this.groundY - FROG_FEET_GAP + h, 'pixel');
