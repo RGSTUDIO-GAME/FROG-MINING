@@ -64,7 +64,7 @@ const BG_CROP = {
   CLOUDS: { y: 0, h: 1024 },
   HILL_FAR: { y: 393, h: 320 },
   HILL_NEAR: { y: 484, h: 260 },
-  GROUND: { x: 37, y: 422, w: 1472, h: 191 },
+  GROUND: { x: 12, y: 422, w: 1514, h: 191 },
 };
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
@@ -641,8 +641,16 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5).setAlpha(0.95).setDepth(4);
 
     // Tanah (visual bergerak + hitbox statis)
-    this.ground = this.add.tileSprite(w / 2, h, w, Math.min(BG_CROP.GROUND.h, Math.max(190, h - this.groundY + 42)), 'bg-ground-band')
-      .setOrigin(0.5, 1).setDepth(5);
+    this.groundHeight = Math.min(BG_CROP.GROUND.h, Math.max(190, h - this.groundY + 42));
+    this.groundWidth = w + 64;
+    this.groundA = this.add.image(0, h, 'bg-ground-band')
+      .setOrigin(0, 1)
+      .setDisplaySize(this.groundWidth, this.groundHeight)
+      .setDepth(5);
+    this.groundB = this.add.image(this.groundWidth - 12, h, 'bg-ground-band')
+      .setOrigin(0, 1)
+      .setDisplaySize(this.groundWidth, this.groundHeight)
+      .setDepth(5);
     // Lantai fisis: bagian atasnya = garis kaki katak (10–20px di atas tanah visual),
     // tebalnya sampai jauh di bawah layar supaya katak tidak pernah tembus/tenggelam.
     this.groundHit = this.physics.add.staticImage(w / 2, this.groundY - FROG_FEET_GAP + h, 'pixel');
@@ -954,7 +962,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.clouds.tilePositionX -= this.speed * dt * 0.05;
     this.hillsFar.tilePositionX -= this.speed * dt * 0.15;
     this.hillsNear.tilePositionX -= this.speed * dt * 0.35;
-    this.ground.tilePositionX += this.speed * dt;
+    this.groundA.x -= this.speed * dt;
+    this.groundB.x -= this.speed * dt;
+    if (this.groundA.x <= -this.groundWidth) this.groundA.x = this.groundB.x + this.groundWidth - 12;
+    if (this.groundB.x <= -this.groundWidth) this.groundB.x = this.groundA.x + this.groundWidth - 12;
 
     // Sinkronkan kecepatan semua objek
     this.obstacles.getChildren().forEach((o) => {
@@ -990,6 +1001,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
     // Lompat: coyote time + buffering + squash saat mendarat
     if (this._grounded()) {
+      if (!this.ducking && this.frog.y > this.frogY) {
+        this.frog.y = this.frogY;
+        this.frog.body.setVelocityY(0);
+      }
       if (this._wasAirborne && !this.ducking) {
         this._landingUntil = this.time.now + 140;
         this._landSquash();
