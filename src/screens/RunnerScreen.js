@@ -213,10 +213,10 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   _buildBackgroundTextures() {
     if (FROG_ART !== 'frames') return;
     this._makeCropTexture('bg-cloud-band', 'bg-clouds', 0, 1024);
-    // Crop yang terlalu tinggi membuat layer bukit hanya menangkap area langit.
-    // Ambil band yang lebih rendah supaya bentuk bukit benar-benar masuk ke viewport.
-    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 450, 420);
-    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 520, 360);
+    // Jangan crop puncak bukit; pakai frame penuh supaya bentuk gunung utuh
+    // dan tidak terlihat tenggelam / terpotong saat di-tile.
+    this._makeCropTexture('bg-hill-far-band', 'bg-hill-far', 0, 1024);
+    this._makeCropTexture('bg-hill-near-band', 'bg-hill-near', 0, 1024);
     this._makeCropTexture('bg-ground-band', 'bg-ground', 420, 240);
   }
 
@@ -617,9 +617,9 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     // Awan / bukit parallax
     this.clouds = this.add.tileSprite(w / 2, h * 0.14, w, Math.max(110, Math.round(h * 0.40)), 'bg-cloud-band')
       .setOrigin(0.5, 0.5).setAlpha(0.34).setDepth(1);
-    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.34, w, Math.max(220, Math.round(h * 0.40)), 'bg-hill-far-band')
+    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.38, w, Math.max(220, Math.round(h * 0.42)), 'bg-hill-far-band')
       .setOrigin(0.5, 0.5).setAlpha(0.58).setDepth(3);
-    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.18, w, Math.max(220, Math.round(h * 0.34)), 'bg-hill-near-band')
+    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.22, w, Math.max(220, Math.round(h * 0.36)), 'bg-hill-near-band')
       .setOrigin(0.5, 0.5).setAlpha(0.76).setDepth(4);
 
     // Tanah (visual bergerak + hitbox statis)
@@ -691,7 +691,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     // Phaser mengalikan body dengan skala sprite otomatis tiap frame, jadi hitbox
     // selalu menyatu dengan sprite — termasuk saat animasi squash/stretch.
     const bodyW = Math.max(14, b.w - 10);
-    const bodyH = Math.max(10, b.h - 8);
+    const bodyH = Math.max(10, b.h);
     this.frog.body.setSize(bodyW, bodyH, false);
     this.frog.body.setOffset(b.x + 5, b.y + 4);
   }
@@ -767,7 +767,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
   _start() {
     this.state = 'running';
     this.speed = BASE_SPEED;
-    this._nextObstacleAt = this.distance + 30;
+    this._nextObstacleAt = this.distance + 42;
     this._wasAirborne = false;
     this._landingUntil = 0;
     if (this._idleTween) {
@@ -839,7 +839,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     // Jarak antar kelompok: waktu reaksi 1.5–2.2s (makin jauh sedikit lebih rapat, tetap adil).
     // Dihitung dari obstacle TERAKHIR kelompok ini, jadi kelompok berikutnya tidak pernah
     // muncul menempel di belakang kelompok sebelumnya.
-    const reactTime = Phaser.Math.Clamp(2.2 - this.distance * 0.0005, 1.5, 2.2);
+    const reactTime = Phaser.Math.Clamp(2.5 - this.distance * 0.0004, 2.0, 2.6);
     const gapPx = this.speed * reactTime;
     this._nextObstacleAt = this.distance + ((pattern.length - 1) * spacing + gapPx) / 10;
   }
