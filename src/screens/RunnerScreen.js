@@ -59,6 +59,7 @@ const GRAVITY = 2300;
 const JUMP_VELOCITY = -830;
 const BASE_SPEED = 280;
 const MAX_SPEED = 560;
+const SURFACE_RAISE = 12;
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
 // foot = frame-y dasar objek yang terlihat di dalam texture (dipakai agar menempel ke tanah).
@@ -599,7 +600,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
     this.width = w;
     this.height = h;
-    this.groundY = h - Math.max(76, Math.round(h * 0.13));
+    this.groundY = h - Math.max(76, Math.round(h * 0.13)) - SURFACE_RAISE;
     this.frogScale = Phaser.Math.Clamp((h * 0.12) / FROG_BOUNDS.run.h, 0.45, 1.05);
     this.frogX = Math.max(64, Math.round(w * 0.24));
     // Anchor katak di kaki (bawah): telapak kaki ~12px di atas garis tanah,

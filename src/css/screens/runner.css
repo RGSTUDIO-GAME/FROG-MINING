@@ -85,6 +85,10 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.42) 0 8%, transparent 9%),
+    radial-gradient(circle at 70% 28%, rgba(255, 255, 255, 0.26) 0 10%, transparent 11%),
+    linear-gradient(180deg, #0f6fe8 0%, #4ac2ff 62%, #2f8a52 62%, #2a7a47 100%);
 }
 
 .runner-stage canvas {
