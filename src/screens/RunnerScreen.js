@@ -60,12 +60,13 @@ const JUMP_VELOCITY = -830;
 const BASE_SPEED = 280;
 const MAX_SPEED = 560;
 const SURFACE_RAISE = 58;
+const FROG_RUN_FPS = 5;
 
 const BG_CROP = {
   CLOUDS: { y: 0, h: 1024 },
   HILL_FAR: { y: 393, h: 320 },
   HILL_NEAR: { y: 484, h: 260 },
-  GROUND: { y: 422, h: 240 },
+  GROUND: { y: 422, h: 191 },
 };
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
@@ -553,7 +554,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       this.anims.create({
         key: 'run',
         frames: frames(this._framesFor('run')),
-        frameRate: 8,
+        frameRate: FROG_RUN_FPS,
         repeat: -1,
       });
     }
@@ -944,7 +945,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.clouds.tilePositionX -= this.speed * dt * 0.05;
     this.hillsFar.tilePositionX -= this.speed * dt * 0.15;
     this.hillsNear.tilePositionX -= this.speed * dt * 0.35;
-    this.ground.tilePositionX -= this.speed * dt;
+    // Ground harus bergulir ke kiri di layar, jadi offset tekstur digeser ke kanan.
+    this.ground.tilePositionX += this.speed * dt;
 
     // Sinkronkan kecepatan semua objek
     this.obstacles.getChildren().forEach((o) => {
