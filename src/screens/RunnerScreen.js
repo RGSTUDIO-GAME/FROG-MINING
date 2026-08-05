@@ -59,7 +59,7 @@ const GRAVITY = 2300;
 const JUMP_VELOCITY = -830;
 const BASE_SPEED = 280;
 const MAX_SPEED = 560;
-const SURFACE_RAISE = 12;
+const SURFACE_RAISE = 42;
 
 // Rintangan: tex = texture (atau frame pertama animasi), anim = animasi opsional.
 // foot = frame-y dasar objek yang terlihat di dalam texture (dipakai agar menempel ke tanah).
@@ -617,11 +617,11 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
 
     // Awan / bukit parallax
     this.clouds = this.add.tileSprite(w / 2, h * 0.14, w, Math.max(110, Math.round(h * 0.40)), 'bg-cloud-band')
-      .setOrigin(0.5, 0.5).setAlpha(0.34).setDepth(1);
-    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.38, w, Math.max(220, Math.round(h * 0.42)), 'bg-hill-far-band')
-      .setOrigin(0.5, 0.5).setAlpha(0.58).setDepth(3);
-    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.22, w, Math.max(220, Math.round(h * 0.36)), 'bg-hill-near-band')
-      .setOrigin(0.5, 0.5).setAlpha(0.76).setDepth(4);
+      .setOrigin(0.5, 0.5).setAlpha(0.28).setDepth(1);
+    this.hillsFar = this.add.tileSprite(w / 2, this.groundY - h * 0.40, w, Math.max(220, Math.round(h * 0.44)), 'bg-hill-far-band')
+      .setOrigin(0.5, 0.5).setAlpha(0.70).setDepth(3);
+    this.hillsNear = this.add.tileSprite(w / 2, this.groundY - h * 0.26, w, Math.max(220, Math.round(h * 0.38)), 'bg-hill-near-band')
+      .setOrigin(0.5, 0.5).setAlpha(0.90).setDepth(4);
 
     // Tanah (visual bergerak + hitbox statis)
     this.ground = this.add.tileSprite(w / 2, h, w, Math.max(160, h - this.groundY + 44), 'bg-ground-band')
