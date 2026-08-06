@@ -209,6 +209,9 @@ export class HomeScreen {
     if (nameEl && status.package) {
       nameEl.textContent = (status.package.icon || '⛏️') + ' ' + (status.package.name || 'Auto Mining') + ' Active';
     }
+    if (status.startTime && status.endTime) {
+      this._miningTotalMs = Math.max(1, new Date(status.endTime).getTime() - new Date(status.startTime).getTime());
+    }
     this._updateMiningTimer(status.remainingMs, status.remainingFormatted);
   }
 
@@ -221,11 +224,9 @@ export class HomeScreen {
     const fill = this.el?.querySelector('#mining-fill');
     if (timer) timer.textContent = formatted;
     if (fill) {
-      const data = window.__game?.gameDataManager?.getData();
-      const totalMs = data?.autoMining?.endTime
-        ? (new Date(data.autoMining.endTime).getTime() - new Date(data.autoMining.startTime).getTime())
-        : 1;
-      fill.style.width = Math.max(0, (remainingMs / totalMs) * 100) + '%';
+      const totalMs = this._miningTotalMs || 1;
+      const pct = Math.min(100, Math.max(0, (remainingMs / totalMs) * 100));
+      fill.style.width = pct + '%';
     }
   }
 

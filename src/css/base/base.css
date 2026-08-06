@@ -18,7 +18,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   position: relative;
-  background: url('bg-fantasy.jpg') center top / cover no-repeat fixed;
+  background: url('/assets/bg-fantasy.jpg') center top / cover no-repeat fixed;
 }
 
 #app::before {

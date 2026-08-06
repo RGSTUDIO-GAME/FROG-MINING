@@ -171,4 +171,11 @@ try {
   );
 } catch {}
 
+// Fix old welcome gift amount (reward is 5.000, not 1.000.000)
+try {
+  db.prepare(
+    "UPDATE mails SET reward_amount = 5000 WHERE title LIKE '%Welcome Gift%' AND reward_amount > 5000"
+  ).run();
+} catch {}
+
 export default db;

@@ -30,5 +30,12 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      // Forward API calls to the backend during local development.
+      '/api': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+      },
+    },
   },
 });

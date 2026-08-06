@@ -1,8 +1,8 @@
 import { Logger } from '@utils/logger.js';
 import { Config } from '@core/Config.js';
 
-const MUSIC_SRC = '/assets/sounds/bg_morning.mp3';
-const TAP_SOUND_SRC = '/assets/sounds/fx_tap_frog.mp3';
+const MUSIC_SRC = `${import.meta.env.BASE_URL}assets/sounds/bg_morning.mp3`;
+const TAP_SOUND_SRC = `${import.meta.env.BASE_URL}assets/sounds/fx_tap_frog.mp3`;
 const MUSIC_GAP_MS = 5000;
 const MUSIC_FADE_MS = 3000;
 

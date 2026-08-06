@@ -186,7 +186,7 @@ export class SettingsScreen {
     try {
       if (window.Telegram?.WebApp?.openTelegramLink) {
         const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(this._inviteUrl) +
-          '&text=' + encodeURIComponent('Main Bareng di Frogmining dan Ambil Bonus 5000 Diamond');
+          '&text=' + encodeURIComponent('Main Bareng di Frogmining dan Ambil Bonus 500 Diamond');
         window.Telegram.WebApp.openTelegramLink(shareUrl);
         return;
       }

@@ -1,5 +1,5 @@
 .splash-screen {
-  background: url('bg-fantasy.jpg') center / cover no-repeat;
+  background: url('/assets/bg-fantasy.jpg') center / cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;

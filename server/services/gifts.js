@@ -6,7 +6,7 @@ import { markDataChanged } from './backup.js';
 /**
  * GiftsService — Server-side welcome gift.
  *
- * Every new player receives a welcome gift mail (1.000.000 Diamond) once.
+ * Every new player receives a welcome gift mail (5.000 Diamond) once.
  * Creation is idempotent: the mail only exists if the player has none yet.
  */
 const WELCOME_TITLE = '🎁 Welcome Gift';

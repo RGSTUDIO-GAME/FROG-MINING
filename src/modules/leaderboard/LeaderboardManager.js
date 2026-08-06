@@ -135,6 +135,15 @@ export class LeaderboardManager {
     this.events.emit('leaderboard:update');
   }
 
+  /**
+   * Pull fresh boards from the server and emit an update.
+   * Public wrapper used by periodic refreshes (countdown ticker).
+   */
+  async refresh() {
+    await this._fetchFromServer();
+    return this._data;
+  }
+
   _cleanName(name, playerId) {
     const n = String(name || '').trim();
     if (n && !/^\d+$/.test(n)) return n;

@@ -9,10 +9,10 @@ export async function checkAndSendGifts(mailManager, accountManager) {
 
   const gift = {
     title: '🎁 Welcome Gift',
-    content: 'Selamat datang di Frog Mining! Nikmati 1.000.000 Diamond sebagai hadiah sambutan. Gunakan untuk Auto Mining! 🐸⛏️',
+    content: 'Selamat datang di Frog Mining! Nikmati 5.000 Diamond sebagai hadiah sambutan. Gunakan untuk Auto Mining! 🐸⛏️',
     category: 'admin',
     rewardType: 'diamond',
-    rewardAmount: 1000000,
+    rewardAmount: 5000,
   };
 
   // Check if already sent

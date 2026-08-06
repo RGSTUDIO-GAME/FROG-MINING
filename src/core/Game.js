@@ -103,7 +103,7 @@ export class Game {
     home?.updateScore(this.scoreManager.getScore());
     this.header?.updateDiamonds(this.gameDataManager.getDiamonds());
     this.header?.updateMailCount(this.mailManager.getUnreadCount());
-    this.header?.updateRank(this.scoreManager.getRank());
+    this._updateHeaderRank();
     shop?.updateDiamonds(this.gameDataManager.getDiamonds());
     if (profile) this._updateProfile(profile);
     this._refreshReferralInfo(account);
@@ -160,10 +160,10 @@ export class Game {
     const runner = new RunnerScreen(this.events);
     this.screenManager.register('runner', runner);
 
-    this.router.init(this.config.ROUTES);
-
     // Route mini-game (tersembunyi — tidak muncul di bottom nav)
     this.router.routes.set('/runner', { path: '/runner', name: 'runner' });
+
+    this.router.init(this.config.ROUTES);
 
     this.events.on('nav:change', (path) => this.router.navigate(path));
     this.events.on('route:change', ({ to }) => {
@@ -217,7 +217,6 @@ export class Game {
     });
     this.events.on('game:tapProcessed', ({ score }) => {
       home.updateScore(score);
-      this.header.updateRank(this.scoreManager.getRank());
       this.leaderboardManager.updateScore(score);
     });
     this.events.on('gamedata:scoreChange', ({ score }) => home.updateScore(score));
@@ -252,12 +251,37 @@ export class Game {
       if (shop) this._refreshShopMining(shop);
     });
 
+    // Shop — diamond purchase (works when the server enables simulated shop)
+    this.events.on('shop:buy', async ({ productId }) => {
+      const account = this._account || this.accountManager.getAccount();
+      if (!account?.id) return;
+      const result = await Api.purchaseProduct(account.id, productId);
+      if (result.success) {
+        if (typeof result.data?.diamonds === 'number') {
+          this.gameDataManager.setDiamonds(result.data.diamonds);
+        }
+        showPopup('Pembelian berhasil!', 'success');
+        this.soundManager.playReward();
+      } else {
+        showPopup(result.error || 'Pembelian gagal, coba lagi', 'error');
+        this.soundManager.playError();
+      }
+    });
+
     // Leaderboard
-    this.events.on('leaderboard:requestUpdate', () => this._refreshLeaderboard(leaderboard));
-    this.events.on('leaderboard:update', () => this._refreshLeaderboard(leaderboard));
+    this.events.on('leaderboard:requestUpdate', () => {
+      this.leaderboardManager.refresh().then(() => this._refreshLeaderboard(leaderboard)).catch(() => {});
+    });
+    // Re-render leaderboard is debounced: updateScore fires on every tap.
+    this._refreshLeaderboardDebounced = this._debounce(() => this._refreshLeaderboard(leaderboard), 600);
+    this.events.on('leaderboard:update', () => this._refreshLeaderboardDebounced());
 
     // Mail
     this.events.on('mail:new', () => this.header.updateMailCount(this.mailManager.getUnreadCount()));
+    this.events.on('mail:open', ({ mailId }) => {
+      this.mailManager.markRead(mailId);
+      this.header.updateMailCount(this.mailManager.getUnreadCount());
+    });
 
     this.events.on('mail:claimRequest', async ({ mailId }) => {
       const result = await this.mailManager.claimReward(mailId);
@@ -296,6 +320,27 @@ export class Game {
       const board = this.leaderboardManager.getBoard(period);
       screen.updateBoard({ period, board });
     });
+    this._updateHeaderRank();
+  }
+
+  /**
+   * Header rank comes from the real daily leaderboard position
+   * (server-synced), not a guessed number.
+   */
+  _updateHeaderRank() {
+    const board = this.leaderboardManager.getBoard('daily');
+    this.header?.updateRank(board.playerRank ?? '--');
+  }
+
+  _debounce(fn, wait) {
+    let timer = null;
+    return (...args) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        fn(...args);
+      }, wait);
+    };
   }
 
   _refreshMail(screen) {

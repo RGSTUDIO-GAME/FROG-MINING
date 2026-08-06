@@ -3,6 +3,8 @@ import db from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
 import { payReferralCommission } from '../services/referral.js';
 
+const SHOP_ENABLED = process.env.ENABLE_SIMULATED_SHOP === 'true';
+
 export default async function diamondRoutes(fastify) {
   // Get player diamonds
   fastify.get('/api/diamonds/:playerId', async (request, reply) => {
@@ -29,12 +31,18 @@ export default async function diamondRoutes(fastify) {
     });
   });
 
-  // Simulate purchase (for testing — in production, integrate with payment gateway)
+  // Simulate purchase (for testing only — disabled by default until a real
+  // payment gateway is integrated in Sprint 10). Enable with
+  // ENABLE_SIMULATED_SHOP=true, otherwise clients can add diamonds for free.
   fastify.post('/api/shop/purchase', async (request, reply) => {
     const { playerId, productId } = request.body || {};
 
     if (!playerId || !productId) {
       return reply.code(400).send({ status: 'error', message: 'Player ID and Product ID required' });
+    }
+
+    if (!SHOP_ENABLED) {
+      return reply.code(403).send({ status: 'error', message: 'Pembayaran belum tersedia — coba lagi nanti' });
     }
 
     const product = db.prepare('SELECT * FROM shop_products WHERE id = ?').get(productId);

@@ -80,9 +80,9 @@ export class ScoreManager {
   getTotalTaps() { return this._totalTaps; }
 
   getRank() {
-    const score = this.getScore();
-    if (score === 0) return '--';
-    return Math.max(1, 100 - Math.floor(score / 100));
+    // Real rank comes from the leaderboard (server-synced). This helper is
+    // kept only for debug state — a guessed rank would be misleading.
+    return '--';
   }
 
   destroy() {

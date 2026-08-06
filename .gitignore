@@ -20,4 +20,4 @@ Thumbs.db
 *.log
 npm-debug.log*
 generate-assets.py
-data/frog-mining.db*
+data/frog-mining*.db*
