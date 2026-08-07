@@ -1189,7 +1189,6 @@ export class RunnerScreen {
         </div>
       </div>
       <div class="runner-stage" id="runner-stage">
-        <div class="runner-chip runner-chip-ready" id="runner-chip-ready">👆 Tap untuk mulai lari!</div>
         <div class="runner-chip runner-chip-paused" id="runner-chip-paused">⏸ Paused</div>
         <div class="runner-gameover" id="runner-gameover">
           <div class="runner-gameover-card">
@@ -1306,7 +1305,10 @@ export class RunnerScreen {
     });
 
     // Komunikasi scene → HUD
-    this.game.events.on('runner:state', (s) => this._setState(s));
+    this.game.events.on('runner:state', (s) => {
+      this._setState(s);
+      if (s === 'ready') this._sceneCall('jump');
+    });
     this.game.events.on('runner:score', (n) => this._setScore(n));
     this.game.events.on('runner:sfx', (name) => this._playSfx(name));
     this.game.events.on('runner:gameover', (payload) => this._onGameOver(payload));
