@@ -3,6 +3,7 @@ import db, { hashPassword } from '../db/database.js';
 import { markDataChanged } from '../services/backup.js';
 import { ensureWelcomeGift } from '../services/gifts.js';
 import { bindReferral, ensureRefCode } from '../services/referral.js';
+import { config } from '../config.js';
 
 function makeUniqueUsername(base, maxLen = 32) {
   const clean = String(base || 'Pemain').trim().replace(/\s+/g, '_').slice(0, maxLen) || 'Pemain';
@@ -251,13 +252,11 @@ export default async function authRoutes(fastify) {
     }
     const refCode = ensureRefCode(playerId);
     const invitedCount = db.prepare('SELECT COUNT(*) AS c FROM players WHERE referrer_id = ?').get(playerId).c;
-    const proto = request.headers['x-forwarded-proto'] || request.protocol || 'https';
-    const host = request.headers['x-forwarded-host'] || request.hostname || request.host;
     return reply.send({
       status: 'success',
       data: {
         refCode,
-        inviteUrl: (proto + '://' + host) + '/?ref=' + refCode,
+        inviteUrl: 'https://t.me/' + config.telegramBotUsername + '/' + config.telegramAppName + '?startapp=ref_' + refCode,
         invitedCount,
         inviterBonus: 500,
         friendBonus: 200,

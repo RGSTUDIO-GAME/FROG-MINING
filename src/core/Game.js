@@ -430,10 +430,9 @@ export class Game {
     });
     this._account = this.accountManager.getAccount();
 
-    const inTelegram = !!window.Telegram?.WebApp;
-    const base = inTelegram
-      ? 'https://t.me/' + Config.APP.TELEGRAM_BOT + '/' + Config.APP.TELEGRAM_APP + '?startapp=ref_'
-      : window.location.origin + '/?ref=';
+    // Game ini Telegram Mini App — link undangan selalu format Telegram
+    // (buka bot lalu langsung buka app dengan startapp=ref_CODE).
+    const base = 'https://t.me/' + Config.APP.TELEGRAM_BOT + '/' + Config.APP.TELEGRAM_APP + '?startapp=ref_';
     this.events.emit('settings:referral', {
       inviteUrl: base + code,
       code,
