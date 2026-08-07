@@ -292,6 +292,9 @@ export class AccountManager {
       if (ref) return ref;
       const startapp = url.searchParams.get('startapp');
       if (startapp && startapp.startsWith('ref_')) return startapp.slice(4);
+      // Telegram Web App fallback di browser memakai tgWebAppStartParam
+      const tgStart = url.searchParams.get('tgWebAppStartParam');
+      if (tgStart && tgStart.startsWith('ref_')) return tgStart.slice(4);
     } catch { /* ignore */ }
     try {
       const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
