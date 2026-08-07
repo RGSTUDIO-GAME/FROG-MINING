@@ -301,6 +301,7 @@ export class Game {
     this.events.on('settings:soundToggle', (enabled) => this.soundManager.setEnabled(enabled));
     this.events.on('settings:musicToggle', (enabled) => this.soundManager.setMusicEnabled(enabled));
     this.events.on('settings:musicVolume', (volume) => this.soundManager.setMusicVolume(volume));
+    this.events.on('settings:soundVolume', (volume) => this.soundManager.setSoundVolume(volume));
     this.events.on('settings:stateRequest', () => {
       this.events.emit('settings:state', this.soundManager.getState());
       const account = this._account || this.accountManager.getAccount();

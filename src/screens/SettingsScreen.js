@@ -60,6 +60,17 @@ export class SettingsScreen {
               <span class="settings-volume-value" id="music-volume-label">70%</span>
             </div>
           </div>
+
+          <div class="settings-row settings-volume-row">
+            <div class="settings-row-left">
+              <span class="settings-row-icon">🔊</span>
+              <span class="settings-row-label">Volume Suara</span>
+            </div>
+            <div class="settings-volume-control">
+              <input type="range" id="sound-volume" min="0" max="100" value="70">
+              <span class="settings-volume-value" id="sound-volume-label">70%</span>
+            </div>
+          </div>
         </div>
 
         <div class="settings-card">
@@ -122,6 +133,13 @@ export class SettingsScreen {
       this.events.emit('settings:musicVolume', value);
     });
 
+    this.el.querySelector('#sound-volume').addEventListener('input', (e) => {
+      const value = Number(e.target.value) / 100;
+      const label = this.el.querySelector('#sound-volume-label');
+      if (label) label.textContent = e.target.value + '%';
+      this.events.emit('settings:soundVolume', value);
+    });
+
     this.el.querySelector('#referral-copy').addEventListener('click', () => this._copyInvite());
     this.el.querySelector('#referral-share').addEventListener('click', () => this._shareInvite());
 
@@ -140,11 +158,16 @@ export class SettingsScreen {
     const musicToggle = this.el.querySelector('#toggle-music');
     const volumeSlider = this.el.querySelector('#music-volume');
     const volumeLabel = this.el.querySelector('#music-volume-label');
+    const soundVolumeSlider = this.el.querySelector('#sound-volume');
+    const soundVolumeLabel = this.el.querySelector('#sound-volume-label');
     if (soundToggle) soundToggle.checked = state.sound !== false;
     if (musicToggle) musicToggle.checked = state.music === true;
     const volume = Math.round((typeof state.volume === 'number' ? state.volume : 0.7) * 100);
     if (volumeSlider) volumeSlider.value = volume;
     if (volumeLabel) volumeLabel.textContent = volume + '%';
+    const soundVolume = Math.round((typeof state.soundVolume === 'number' ? state.soundVolume : 0.7) * 100);
+    if (soundVolumeSlider) soundVolumeSlider.value = soundVolume;
+    if (soundVolumeLabel) soundVolumeLabel.textContent = soundVolume + '%';
   }
 
   _applyReferral(data) {

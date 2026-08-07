@@ -16,7 +16,9 @@ export class SoundManager {
     this._enabled = true;
     this._musicEnabled = true;
     this._musicVolume = 0.7;
+    this._soundVolume = 0.7;
     this._audioCtx = null;
+    this._sfxGain = null;
     this._sounds = {};
     this._music = null;
     this._musicTimer = null;
@@ -35,6 +37,9 @@ export class SoundManager {
       if (!this._audioCtx) {
         try {
           this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          this._sfxGain = this._audioCtx.createGain();
+          this._sfxGain.gain.value = this._soundVolume;
+          this._sfxGain.connect(this._audioCtx.destination);
           Logger.debug('SoundManager', 'AudioContext created');
         } catch (e) {
           Logger.warn('SoundManager', 'Web Audio not supported');
@@ -119,11 +124,23 @@ export class SoundManager {
     return this._musicVolume;
   }
 
+  setSoundVolume(volume) {
+    this._soundVolume = Math.min(1, Math.max(0, Number(volume) || 0));
+    if (this._sfxGain) this._sfxGain.gain.value = this._soundVolume;
+    if (this._tapAudio) this._tapAudio.volume = this._soundVolume;
+    this._savePrefs();
+  }
+
+  getSoundVolume() {
+    return this._soundVolume;
+  }
+
   getState() {
     return {
       sound: this._enabled,
       music: this._musicEnabled,
       volume: this._musicVolume,
+      soundVolume: this._soundVolume,
     };
   }
 
@@ -135,6 +152,7 @@ export class SoundManager {
       if (typeof p.sound === 'boolean') this._enabled = p.sound;
       if (typeof p.music === 'boolean') this._musicEnabled = p.music;
       if (typeof p.volume === 'number') this._musicVolume = Math.min(1, Math.max(0, p.volume));
+      if (typeof p.soundVolume === 'number') this._soundVolume = Math.min(1, Math.max(0, p.soundVolume));
     } catch (e) { /* ignore */ }
   }
 
@@ -144,6 +162,7 @@ export class SoundManager {
         sound: this._enabled,
         music: this._musicEnabled,
         volume: this._musicVolume,
+        soundVolume: this._soundVolume,
       }));
     } catch (e) { /* ignore */ }
   }
@@ -169,6 +188,7 @@ export class SoundManager {
     }
     try {
       this._tapAudio.currentTime = 0;
+      this._tapAudio.volume = this._soundVolume;
       const p = this._tapAudio.play();
       if (p && p.catch) p.catch(() => {});
       return true;
@@ -238,7 +258,7 @@ export class SoundManager {
 
       osc.connect(filter);
       filter.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this._sfxGain);
       lfo.connect(lfoGain);
       lfoGain.connect(gain.gain);
 
@@ -262,7 +282,7 @@ export class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this._sfxGain);
 
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
@@ -280,7 +300,7 @@ export class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this._sfxGain);
 
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.05);
@@ -299,7 +319,7 @@ export class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this._sfxGain);
 
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
