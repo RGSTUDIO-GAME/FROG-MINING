@@ -12,6 +12,7 @@ import { Logger } from '@utils/logger.js';
 const FROG_ART = 'frames'; // 'builtin' (kode) | 'frames' (PNG sendiri)
 const FRAME_DIR = `${import.meta.env.BASE_URL}assets/frog-runner/character/`;
 const BG_DIR = `${import.meta.env.BASE_URL}assets/frog-runner/background/`;
+const LOGO_SRC = `${import.meta.env.BASE_URL}assets/frog-runner/logo.png`;
 const ASSETS = {
   IDLE: 'idle.png',
   BLINK: 'blink.png',
@@ -1180,7 +1181,7 @@ export class RunnerScreen {
     overlay.innerHTML = `
       <div class="runner-topbar">
         <div class="runner-score-box">
-          <span class="runner-score-icon">🐸</span>
+          <img class="runner-score-icon-img" src="${LOGO_SRC}" alt="Katak">
           <span class="runner-score-value" id="runner-score">0</span>
         </div>
         <div class="runner-hud-btns">
@@ -1189,7 +1190,10 @@ export class RunnerScreen {
         </div>
       </div>
       <div class="runner-stage" id="runner-stage">
-        <div class="runner-chip runner-chip-ready" id="runner-chip-ready">👆 Tap untuk mulai lari!</div>
+        <div class="runner-chip runner-chip-ready" id="runner-chip-ready">
+          <img class="runner-logo" src="${LOGO_SRC}" alt="Logo Katak">
+          <span class="runner-chip-text">Tap untuk mulai lari!</span>
+        </div>
         <div class="runner-chip runner-chip-paused" id="runner-chip-paused">⏸ Paused</div>
         <div class="runner-gameover" id="runner-gameover">
           <div class="runner-gameover-card">

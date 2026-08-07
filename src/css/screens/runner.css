@@ -41,7 +41,15 @@
   padding: 6px 16px 6px 10px;
 }
 
-.runner-score-icon { font-size: 16px; }
+.runner-score-icon-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  vertical-align: middle;
+  background: rgba(255, 255, 255, 0.9);
+}
 
 .runner-score-value {
   font-family: var(--font-family-display);
@@ -122,8 +130,25 @@
   text-align: center;
   pointer-events: none;
   display: none;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 90vw;
+  line-height: 1.2;
   animation: runnerChipPulse 1.6s ease-in-out infinite;
+}
+
+.runner-logo {
+  display: block;
+  width: clamp(140px, 30vw, 220px);
+  height: auto;
+  margin: 0 auto 8px;
+  object-fit: contain;
+}
+
+.runner-chip-text {
+  display: block;
+  font-size: var(--font-size-base);
+  font-weight: 800;
+  letter-spacing: 0.2px;
 }
 
 @keyframes runnerChipPulse {
