@@ -59,6 +59,8 @@ export default async function authRoutes(fastify) {
       db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       bindReferral(id, ref);
+      ensureRefCode(id);
+      player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       markDataChanged();
     } else {
       const updatedName = cleanName(username || firstName, tgId);
@@ -94,6 +96,8 @@ export default async function authRoutes(fastify) {
       db.prepare('INSERT INTO auto_mining (id, player_id, status) VALUES (?, ?, ?)').run(uuidv4(), id, 'inactive');
       player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       bindReferral(id, ref);
+      ensureRefCode(id);
+      player = db.prepare('SELECT * FROM players WHERE id = ?').get(id);
       markDataChanged();
     } else {
       db.prepare('UPDATE players SET last_login = ?, updated_at = ? WHERE id = ?').run(now, now, player.id);
@@ -247,11 +251,13 @@ export default async function authRoutes(fastify) {
     }
     const refCode = ensureRefCode(playerId);
     const invitedCount = db.prepare('SELECT COUNT(*) AS c FROM players WHERE referrer_id = ?').get(playerId).c;
+    const proto = request.headers['x-forwarded-proto'] || request.protocol || 'https';
+    const host = request.headers['x-forwarded-host'] || request.hostname || request.host;
     return reply.send({
       status: 'success',
       data: {
         refCode,
-        inviteUrl: (request.protocol + '://' + request.host) + '/?ref=' + refCode,
+        inviteUrl: (proto + '://' + host) + '/?ref=' + refCode,
         invitedCount,
         inviterBonus: 500,
         friendBonus: 200,

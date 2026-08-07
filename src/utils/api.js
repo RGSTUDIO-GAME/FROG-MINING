@@ -1,7 +1,22 @@
 import { Config } from '@core/Config.js';
 import { Logger } from '@utils/logger.js';
 
-const BASE_URL = Config.API.BASE_URL || window.location.origin;
+/**
+ * Resolve the API base URL.
+ * The server serves both the built frontend (dist/) and the API on the same
+ * origin, so fall back to the current origin whenever the configured base is
+ * missing or still points to the local dev default (http://localhost:3001).
+ * Otherwise remote clients would call localhost and every request would fail.
+ */
+function resolveBaseUrl() {
+  const configured = String(Config.API.BASE_URL || '').trim();
+  if (configured && !/localhost|127\.0\.0\.1|0\.0\.0\.0|::1/i.test(configured)) {
+    return configured;
+  }
+  return window.location.origin;
+}
+
+const BASE_URL = resolveBaseUrl();
 const REQUEST_TIMEOUT = 15000;
 
 /**
