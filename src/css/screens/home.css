@@ -357,6 +357,15 @@
   box-shadow: var(--shadow-glow-gold);
 }
 
+.runner-play-icon-img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: contain;
+  pointer-events: none;
+  display: block;
+}
+
 .runner-play-icon {
   font-size: 30px;
   flex-shrink: 0;

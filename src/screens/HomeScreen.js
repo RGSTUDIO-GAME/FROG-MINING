@@ -1,5 +1,7 @@
 import { Logger } from '@utils/logger.js';
 
+const LOGO_SRC = `${import.meta.env.BASE_URL}assets/frog-runner/logo.png`;
+
 /**
  * HomeScreen — Main gameplay screen with frog, score, and auto mining.
  */
@@ -56,7 +58,7 @@ export class HomeScreen {
         </div>
 
         <button class="runner-play-btn" id="runner-play" type="button">
-          <span class="runner-play-icon">🐸</span>
+          <span class="runner-play-icon"><img class="runner-play-icon-img" src="${LOGO_SRC}" alt="Katak" draggable="false" /></span>
           <span class="runner-play-text">
             <span class="runner-play-title">PLAY GAME</span>
             <span class="runner-play-sub">Frog Runner Mini-Game</span>
