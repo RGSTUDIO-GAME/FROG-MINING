@@ -1189,6 +1189,7 @@ export class RunnerScreen {
         </div>
       </div>
       <div class="runner-stage" id="runner-stage">
+        <div class="runner-chip runner-chip-ready" id="runner-chip-ready">👆 Tap untuk mulai lari!</div>
         <div class="runner-chip runner-chip-paused" id="runner-chip-paused">⏸ Paused</div>
         <div class="runner-gameover" id="runner-gameover">
           <div class="runner-gameover-card">
@@ -1278,9 +1279,6 @@ export class RunnerScreen {
   async _startGame() {
     const stage = this.el.querySelector('#runner-stage');
 
-    // Tunggu layout overlay selesai supaya ukuran stage akurat
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
     const width = Math.max(280, stage.clientWidth || window.innerWidth);
     const height = Math.max(320, stage.clientHeight || window.innerHeight);
 
@@ -1290,7 +1288,7 @@ export class RunnerScreen {
       parent: stage,
       width,
       height,
-      backgroundColor: '#25634a',
+      transparent: true,
       scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.NO_CENTER,
@@ -1305,10 +1303,7 @@ export class RunnerScreen {
     });
 
     // Komunikasi scene → HUD
-    this.game.events.on('runner:state', (s) => {
-      this._setState(s);
-      if (s === 'ready') this._sceneCall('jump');
-    });
+    this.game.events.on('runner:state', (s) => this._setState(s));
     this.game.events.on('runner:score', (n) => this._setScore(n));
     this.game.events.on('runner:sfx', (name) => this._playSfx(name));
     this.game.events.on('runner:gameover', (payload) => this._onGameOver(payload));
