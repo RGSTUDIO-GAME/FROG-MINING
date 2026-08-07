@@ -184,6 +184,28 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.game.events.emit('runner:sfx', name);
   }
 
+  // Baris terakhir (terbawah) piksel yang benar-benar terlihat pada PNG asli.
+  // Dipakai agar kaki semua frame menapak di FROG_FEET_Y yang sama, sehingga
+  // animasi lari tidak bergetar naik-turun akibat tinggi PNG yang berbeda-beda.
+  _frameFeetY(src) {
+    try {
+      const probe = document.createElement('canvas');
+      probe.width = src.width;
+      probe.height = src.height;
+      const pctx = probe.getContext('2d', { willReadFrequently: true });
+      pctx.drawImage(src, 0, 0);
+      const data = pctx.getImageData(0, 0, src.width, src.height).data;
+      for (let y = src.height - 1; y >= 0; y--) {
+        for (let x = 0; x < src.width; x++) {
+          if (data[(y * src.width + x) * 4 + 3] >= 40) return y;
+        }
+      }
+    } catch (e) {
+      Logger.warn('Runner', 'gagal membaca alpha frame, pakai tinggi asli', e);
+    }
+    return src.height - 1;
+  }
+
   _makeCanvasTexture(key, srcKey) {
     if (this.textures.exists(key)) return;
     const src = this.textures.get(srcKey)?.getSourceImage?.();
@@ -192,7 +214,8 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     const ctx = canvas.getContext();
     ctx.clearRect(0, 0, FRAME.W, FRAME.H);
     const x = Math.round((FRAME.W - src.width) / 2);
-    const y = Math.round(FRAME.H - src.height - 2);
+    const feetY = this._frameFeetY(src);
+    const y = Math.max(0, Math.round(FROG_FEET_Y - feetY));
     ctx.drawImage(src, x, y);
     canvas.refresh();
   }
@@ -575,12 +598,24 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
         repeat: -1,
       });
     }
-    if (!this.anims.exists('jump')) {
+    if (!this.anims.exists('jump-up')) {
+      const jumpUpKeys = FROG_ART === 'frames'
+        ? [frogKey('jump-start'), frogKey('jump')]
+        : ['frog-jump-0', 'frog-jump-1'];
       this.anims.create({
-        key: 'jump',
-        frames: frames(this._framesFor('jump')),
+        key: 'jump-up',
+        frames: frames(jumpUpKeys),
         frameRate: 10,
-        repeat: 0,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists('fall')) {
+      const fallKey = FROG_ART === 'frames' ? frogKey('fall') : 'frog-jump-1';
+      this.anims.create({
+        key: 'fall',
+        frames: frames([fallKey]),
+        frameRate: 8,
+        repeat: -1,
       });
     }
     if (FROG_ART === 'frames' && !this.anims.exists('land')) {
@@ -620,9 +655,12 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this.groundY = h - Math.max(76, Math.round(h * 0.13)) - SURFACE_RAISE;
     this.frogScale = Phaser.Math.Clamp((h * 0.12) / FROG_BOUNDS.run.h, 0.45, 1.05);
     this.frogX = Math.max(64, Math.round(w * 0.24));
-    // Anchor katak di kaki (bawah): telapak kaki ~12px di atas garis tanah,
-    // tidak pernah di tengah layar dan tidak tenggelam ke dalam tanah.
-    this.frogY = this.groundY - FROG_FEET_GAP - (FROG_FEET_Y - FRAME.H / 2) * this.frogScale;
+    // Anchor katak = posisi istirahat fisika: bagian BAWAH hitbox (frame y
+    // 174+58=232) tepat menempel permukaan lantai. Harus sinkron dengan clamp
+    // di update (`frog.y = frogY`) — kalau frogY lebih tinggi dari permukaan,
+    // clamp akan memantulkan katak setiap frame, `grounded()` jadi false, dan
+    // animasi lari terselang pose lompat.
+    this.frogY = this.groundY - FROG_FEET_GAP - (FROG_BOUNDS.run.y + FROG_BOUNDS.run.h - FRAME.H / 2) * this.frogScale;
 
     this.physics.world.setBounds(0, 0, w, h);
     this.cameras.main.setBackgroundColor('#9cdcf7');
@@ -783,7 +821,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
     this._applyBody('jump');
     this._wasAirborne = true;
     this._landingUntil = 0;
-    if (FROG_ART === 'frames') this.frog.play('jump', true);
+    this.frog.play('jump-up', true);
     // regang saat melompat
     const s = this.frogScale;
     this.tweens.add({ targets: this.frog, scaleX: s * 0.92, scaleY: s * 1.08, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
@@ -801,11 +839,7 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
       this._idleTween = null;
       this.frog.y = this.frogY;
     }
-    if (FROG_ART === 'frames') {
-      this.frog.play('run', true);
-    } else {
-      this.frog.play('run', true);
-    }
+    this.frog.play('run', true);
     this._emitState('running');
     this._emitSfx('start');
   }
@@ -1005,8 +1039,11 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
         this.frog.y = this.frogY;
         this.frog.body.setVelocityY(0);
       }
-      if (this._wasAirborne && !this.ducking) {
-        this._landingUntil = this.time.now + 140;
+      // Mendarat hanya dihitung saat benar-benar turun — guard velocity.y
+      // mencegah efek "landing" terpicu sesaat setelah lompat (sebelum body
+      // sempat naik, flag grounded masih true dari step fisika sebelumnya).
+      if (this._wasAirborne && !this.ducking && this.frog.body.velocity.y >= -1) {
+        this._landingUntil = this.time.now + 260;
         this._landSquash();
         if (FROG_ART === 'frames') this.frog.play('land', true);
       }
@@ -1043,8 +1080,25 @@ const createRunnerScene = (Phaser) => class RunnerScene extends Phaser.Scene {
         if (this._bodyMode !== 'run') this._applyBody('run');
         if (this.frog.anims.currentAnim?.key !== 'run') this.frog.play('run');
       }
-    } else if (this.frog.anims.currentAnim?.key !== 'jump') {
-      this.frog.play('jump');
+    } else {
+      // Window landing: tween squash mengubah scaleY → body ikut mengecil &
+      // membesar, membuat katak sempat kehilangan kontak lalu terpental.
+      // Selama window ini, pertahankan pose landing & kunci posisi di frogY.
+      if (FROG_ART === 'frames' && !this.ducking && this.time.now < this._landingUntil && this.frog.y >= this.frogY - 4) {
+        if (this.frog.anims.currentAnim?.key !== 'land') this.frog.play('land', true);
+        if (this.frog.y > this.frogY) this.frog.y = this.frogY;
+        this.frog.body.setVelocityY(0);
+        return;
+      }
+      // Naik → animasi regang, turun → animasi jatuh. Tidak pernah menampilkan
+      // pose landing saat masih di udara.
+      const falling = this.frog.body.velocity.y >= -40;
+      const want = falling ? 'fall' : 'jump-up';
+      if (this.frog.anims.currentAnim?.key !== want) {
+        this.frog.play(want, true);
+      }
+      const bodyMode = falling ? 'fall' : 'jump';
+      if (this._bodyMode !== bodyMode) this._applyBody(bodyMode);
     }
   }
 
