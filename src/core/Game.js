@@ -101,6 +101,7 @@ export class Game {
     const mail = this.screenManager?.getScreen('mail');
 
     home?.updateScore(this.scoreManager.getScore());
+    home?.updateDiamonds(this.gameDataManager.getDiamonds());
     this.header?.updateDiamonds(this.gameDataManager.getDiamonds());
     this.header?.updateMailCount(this.mailManager.getUnreadCount());
     this._updateHeaderRank();
@@ -170,6 +171,7 @@ export class Game {
       this.bottomNav.setActive(to.path);
       if (to.name === 'home') {
         home.updateScore(this.scoreManager.getScore());
+        home.updateDiamonds(this.gameDataManager.getDiamonds());
         this._refreshAutoMiningUI(home);
       }
       if (to.name === 'profile') {
@@ -222,6 +224,7 @@ export class Game {
     this.events.on('gamedata:scoreChange', ({ score }) => home.updateScore(score));
     this.events.on('gamedata:diamondChange', ({ diamonds }) => {
       this.header.updateDiamonds(diamonds);
+      home.updateDiamonds(diamonds);
       this._refreshAutoMiningUI(home);
     });
 

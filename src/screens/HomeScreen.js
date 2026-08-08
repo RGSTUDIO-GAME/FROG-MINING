@@ -1,4 +1,5 @@
 import { Logger } from '@utils/logger.js';
+import { createModal } from '@ui/components/Modal.js';
 
 const LOGO_SRC = `${import.meta.env.BASE_URL}assets/frog-runner/logo.png`;
 
@@ -11,6 +12,8 @@ export class HomeScreen {
     this.el = null;
     this._tapEnabled = true;
     this._lastTap = 0;
+    this._diamonds = 0;
+    this._inventoryModal = null;
   }
 
   show(container) {
@@ -23,8 +26,10 @@ export class HomeScreen {
           <div class="home-stat-label">SCORE</div>
         </div>
         <div class="home-stat">
-          <div class="home-stat-value crystal" id="home-diamond">💎 0</div>
-          <div class="home-stat-label">DIAMOND</div>
+          <button class="home-inventory-btn" id="home-inventory-btn" type="button" aria-label="Buka Inventory">
+            <span class="home-inventory-icon">🎒</span>
+            <span class="home-inventory-label">INVENTORY</span>
+          </button>
         </div>
       </div>
 
@@ -82,6 +87,11 @@ export class HomeScreen {
     const playBtn = this.el.querySelector('#runner-play');
     if (playBtn) {
       playBtn.addEventListener('click', () => this.events.emit('game:runnerPlay'));
+    }
+
+    const inventoryBtn = this.el.querySelector('#home-inventory-btn');
+    if (inventoryBtn) {
+      inventoryBtn.addEventListener('click', () => this.openInventory());
     }
 
     Logger.debug('HomeScreen', 'Shown');
@@ -160,8 +170,49 @@ export class HomeScreen {
   }
 
   updateDiamonds(count) {
-    const el = this.el?.querySelector('#home-diamond');
-    if (el) el.textContent = '💎 ' + count.toLocaleString();
+    this._diamonds = count;
+    if (this._inventoryModal) {
+      const body = this._inventoryModal.el.querySelector('.modal-body');
+      if (body) {
+        body.innerHTML = '';
+        body.appendChild(this._renderInventoryContent());
+      }
+    }
+  }
+
+  openInventory() {
+    if (this._inventoryModal) return;
+    const modal = createModal({
+      title: '🎒 Inventory',
+      content: this._renderInventoryContent(),
+      onClose: () => {
+        this._inventoryModal = null;
+      },
+    });
+    this._inventoryModal = modal;
+  }
+
+  _inventoryItems() {
+    return [
+      { id: 'diamond', name: 'Diamond', icon: '💎', count: this._diamonds },
+    ];
+  }
+
+  _renderInventoryContent() {
+    const wrap = document.createElement('div');
+    const items = this._inventoryItems();
+    wrap.innerHTML = `
+      <div class="inventory-grid">
+        ${items.map((item) => `
+          <div class="inventory-item">
+            <div class="inventory-item-icon">${item.icon}</div>
+            <div class="inventory-item-name">${item.name}</div>
+            <div class="inventory-item-count">x ${item.count.toLocaleString()}</div>
+          </div>`).join('')}
+      </div>
+      <p class="inventory-hint">Item baru akan muncul di sini pada pembaruan berikutnya.</p>
+    `;
+    return wrap;
   }
 
   showMiningPackages(packages, canAfford, onSelect) {

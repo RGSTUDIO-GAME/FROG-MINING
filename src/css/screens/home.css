@@ -37,6 +37,85 @@
   margin-top: 2px;
 }
 
+/* ── Inventory Button ── */
+
+.home-inventory-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  transition: transform 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-inventory-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.home-inventory-btn:active {
+  transform: scale(0.92);
+}
+
+.home-inventory-icon {
+  font-size: var(--font-size-xl);
+  filter: drop-shadow(0 2px 8px rgba(123, 104, 238, 0.5));
+}
+
+.home-inventory-label {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+/* ── Inventory Modal ── */
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--space-sm);
+}
+
+.inventory-item {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.inventory-item-icon {
+  font-size: 34px;
+}
+
+.inventory-item-name {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.inventory-item-count {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-accent-crystal);
+}
+
+.inventory-hint {
+  margin-top: var(--space-md);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 /* ═══ Frog Center ═══ */
 
 .home-center {
