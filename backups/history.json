@@ -1,13 +1,5 @@
 [
   {
-    "timestamp": "2026-08-07T11:11:39.603Z",
-    "size": 274432,
-    "players": 38,
-    "totalScore": 1997388,
-    "totalDiamonds": 147769,
-    "file": "backups/latest/frog-mining.db"
-  },
-  {
     "timestamp": "2026-08-07T11:13:15.960Z",
     "size": 274432,
     "players": 38,
@@ -3996,6 +3988,14 @@
     "size": 286720,
     "players": 50,
     "totalScore": 2124780,
+    "totalDiamonds": 158135,
+    "file": "backups/latest/frog-mining.db"
+  },
+  {
+    "timestamp": "2026-08-08T01:00:59.507Z",
+    "size": 286720,
+    "players": 50,
+    "totalScore": 2124960,
     "totalDiamonds": 158135,
     "file": "backups/latest/frog-mining.db"
   }
